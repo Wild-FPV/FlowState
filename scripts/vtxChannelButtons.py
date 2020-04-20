@@ -25,11 +25,15 @@ def getKeyStates(keyboard):
 def handleUserInputs(keyboard):
     (pressedKeys,activeKeys,inactiveKeys,releasedKeys) = getKeyStates(keyboard)
     channelKeyStates = {1:bge.events.ONEKEY in pressedKeys, 2:bge.events.TWOKEY in pressedKeys, 3:bge.events.THREEKEY in pressedKeys, 4:bge.events.FOURKEY in pressedKeys, 5:bge.events.FIVEKEY in pressedKeys, 6:bge.events.SIXKEY in pressedKeys, 7:bge.events.SEVENKEY in pressedKeys, 8:bge.events.EIGHTKEY in pressedKeys}
-    print(channelKeyStates)
+    debugKeyState = bge.events.ZEROKEY in pressedKeys
+
+    if(debugKeyState):
+        flowState.getRFEnvironment().printRFState()
+
     if(pressedKeys!=[]):
+        flowState.log("player is changing channel")
         for index in channelKeyStates:
             keyPressed = channelKeyStates[index]
-            print(keyPressed)
             if(keyPressed):
 
                 flowState.getRFEnvironment().getReceiver().setChannel(index-1)

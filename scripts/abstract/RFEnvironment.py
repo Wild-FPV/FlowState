@@ -10,6 +10,16 @@ class RFEnvironment:
         self.currentRXIndex = 0
         self.flowState = flowState
 
+    def printRFState(self):
+        rfState = {"receivers":[],"emitters":[]}
+        for rx in self.receivers:
+            item = {"frequency":rx.getFrequency()}
+            rfState['receivers'].append(item)
+        for em in self.emitters:
+            item = {"frequency":em.getFrequency(), "pitMode":em.getPitMode(), "power":em.getPower()}
+            rfState['emitters'].append(item)
+        print("RF environment = "+str(rfState))
+
     def addEmitter(self,emitter):
         self.flowState.log("RFEnvironment.addEmitter()")
         self.emitters.append(emitter)
@@ -25,6 +35,9 @@ class RFEnvironment:
     def removeReceiver(self,receiver):
         self.flowState.log("RFEnvironment.removeReceiver()")
         self.receivers = [value for value in self.receivers if value != receiver] #removes all matching occurances of the rf receiver
+
+    def getReceivers(self):
+        return self.receivers
 
     def getReceiver(self):
         try:

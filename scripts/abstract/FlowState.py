@@ -93,7 +93,6 @@ class FlowState:
         self._radioSettings = RadioSettings(self)
         self._graphicsSettings = GraphicsSettings(self)
         self._networkClient = None
-
         self.menuButtonColor = [0.3,0.3,0.3,0.6]
 
     #eventually we should implement propper logging

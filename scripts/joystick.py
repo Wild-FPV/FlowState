@@ -43,31 +43,20 @@ def getAngularAcceleration():
         own['angularAcc'] = getArrayProduct([av[0]-lastAv[0],av[1]-lastAv[1],av[2]-lastAv[2]])
         own['lastAngularVel'] = own.getAngularVelocity(True)
 
-
-
-
-def reconstructRFEnvironment():#reset RF environment since ghosts and other vtxs and RXs might get deleted
+def setupLaunchPads():
     flowState.log("reconstructing RF environment")
     launchPads = logic.flowState.track['launchPads']
     playerVideoChannel = flowState.getDroneSettings().videoChannel
 
-    flowState.resetRFEnvironment()
-
     #set all the track launch pads to be video receivers. we may create a dedicated ground station object for this in the future
-    for i in range(0,len(launchPads)):
+    for i in range(0,len(flowState.getRFEnvironment().getReceivers())):
+        flowState.log("setting channel for vtx "+str(i))
+        if(i==8):
+            break
+        receiver = flowState.getRFEnvironment().getReceivers()[i]
+        receiver.setChannel(i)
         launchPad = launchPads[i]
-        try:
-            receiver = launchPad['vrx']
-            receiver.setChannel(i)
-            flowState.getRFEnvironment().addReceiver(receiver)
-        except Exception as e:
-            flowState.error("unable to add launch pad "+str(i)+" to rf environment")
-
-    try:
-        flowState.getRFEnvironment().addEmitter(camera['vtx'])
-    except Exception as e:
-        flowState.error("unable to create player vtx on respawn")
-
+        flowState.log("channel = "+str(receiver.getFrequency()))
 
 def initAllThings():
     logic.player['camera'] = scene.objects['cameraMain']
@@ -93,6 +82,7 @@ def initAllThings():
     own['settleDuration'] = 0
     own['settleFrameRates'] = []
     respawn()
+    setupLaunchPads()
     own['rxPosition'] = copy.deepcopy(logic.flowState.track['launchPads'][0].position) #needs to be removed now that we have RFEnvironment
     own['rxPosition'][2]+=100
     own['lastArmState'] = False
@@ -111,9 +101,8 @@ def initAllThings():
     print("init")
 
 def respawn():
-    if(flowState.getGameMode()==flowState.GAME_MODE_SINGLE_PLAYER):
-        launchPadNo = 0
-        reconstructRFEnvironment() #we only need to reset the RF environment in single player since ghosts get deleted
+    #if(flowState.getGameMode()==flowState.GAME_MODE_SINGLE_PLAYER):
+        #flowState.resetRFEnvironment() #we only need to reset the RF environment in single player since ghosts get deleted
 
     #fix the quad
     own['damage'] = 0
@@ -208,6 +197,7 @@ def getStickPercentage(min,max,value):
     return percent
 
 def setup():
+    setCameraAngle(droneSettings.cameraTilt)
     if(logic.flowState.mapLoadStage == flowState.MAP_LOAD_STAGE_DONE):
         if 'setup' not in own:
             print("Joystick.setup: we aren't setup yet!")
@@ -397,7 +387,6 @@ def main():
     getAcc()
     if armed:
         if (own['oporational'] == True)&armed:
-            camera['vtx'].setPitMode(0)
             if own['settled']:
                 if(flowState.getGameMode()==flowState.GAME_MODE_SINGLE_PLAYER) or (flowState.getGameMode()==flowState.GAME_MODE_TEAM_RACE):
                     #WAYS YOU CAN KILL YOUR QUAD
@@ -418,8 +407,9 @@ def main():
                         own['oporational'] = False
 
     #some boolean math to determin if the vtx is working and on
-    vtxPitMode = int(own['vtxOporational'] & armed)
-    camera['vtx'].setPitMode(not vtxPitMode)
+    vtxPitMode = not int(own['vtxOporational'] & armed)
+    if(bool(vtxPitMode)!=bool(camera['vtx'].getPitMode())):
+        camera['vtx'].setPitMode(vtxPitMode)
 
     lv = own.getLinearVelocity(True)
     applyVideoStatic()
@@ -632,11 +622,12 @@ def isSettled():
         if(logic.finishedLastLap):
             logic.setTimeScale(0.001)
             #own.setLinearVelocity([0,0,0],True)
-setup()
-setCameraAngle(droneSettings.cameraTilt)
-if(own['setup']):
-    if(own.sensors['clock'].positive):
-        main()
-    isSettled()
+
+if (logic.flowState.mapLoadStage == flowState.MAP_LOAD_STAGE_DONE):
+    setup()
+    if(own['setup']):
+        if(own.sensors['clock'].positive):
+            main()
+        isSettled()
 if(own.sensors['Message'].positive):
     resetGame()
