@@ -12,6 +12,7 @@ class RFEnvironment:
 
     def printRFState(self):
         rfState = {"receivers":[],"emitters":[]}
+        print("current RX index = "+str(self.currentRXIndex))
         for rx in self.receivers:
             item = {"frequency":rx.getFrequency()}
             rfState['receivers'].append(item)

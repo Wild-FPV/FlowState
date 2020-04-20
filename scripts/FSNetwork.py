@@ -29,6 +29,7 @@ def quitGame():
 def addNewPlayer(playerID):
     print("addNewPlayer("+str(playerID)+")")
     newObj = scene.addObject("playerQuad",logic.player,0)
+    newObj.position = [0,0,-100]
     newObj.suspendDynamics(True)
     logic.peers[playerID] = newObj #lets add this new player model to a dict so we can reference it later
 

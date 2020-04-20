@@ -35,7 +35,6 @@ def handleUserInputs(keyboard):
         for index in channelKeyStates:
             keyPressed = channelKeyStates[index]
             if(keyPressed):
-
                 flowState.getRFEnvironment().getReceiver().setChannel(index-1)
                 if(flowState.getGameMode()!=flowState.GAME_MODE_SINGLE_PLAYER):
                     try:

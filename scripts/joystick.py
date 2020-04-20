@@ -82,7 +82,6 @@ def initAllThings():
     own['settleDuration'] = 0
     own['settleFrameRates'] = []
     respawn()
-    setupLaunchPads()
     own['rxPosition'] = copy.deepcopy(logic.flowState.track['launchPads'][0].position) #needs to be removed now that we have RFEnvironment
     own['rxPosition'][2]+=100
     own['lastArmState'] = False
@@ -203,6 +202,7 @@ def setup():
             print("Joystick.setup: we aren't setup yet!")
             own['setup'] = True
             own['canReset'] = False
+            setupLaunchPads()
             initAllThings()
 
 
@@ -618,10 +618,10 @@ def isSettled():
             if ((time.perf_counter()-own['settleStartTime'])>3):
                 settle()
                 flowState.log("settling due to time expiration in multiplayer")
-    else:
-        if(logic.finishedLastLap):
-            logic.setTimeScale(0.001)
-            #own.setLinearVelocity([0,0,0],True)
+    #else:
+    #    #if(logic.finishedLastLap):
+    #    #    logic.setTimeScale(0.001)
+    #    #    #own.setLinearVelocity([0,0,0],True)
 
 if (logic.flowState.mapLoadStage == flowState.MAP_LOAD_STAGE_DONE):
     setup()
