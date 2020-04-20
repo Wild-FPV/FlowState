@@ -386,17 +386,18 @@ def main():
     getAngularAcceleration()
     getAcc()
     if armed:
+        print(cont.sensors['PropStrike'].positive)
         if (own['oporational'] == True)&armed:
             if own['settled']:
                 if(flowState.getGameMode()==flowState.GAME_MODE_SINGLE_PLAYER) or (flowState.getGameMode()==flowState.GAME_MODE_TEAM_RACE):
                     #WAYS YOU CAN KILL YOUR QUAD
-                    if (own['acc'] > 250):
+                    if (own['acc'] > 150):
                         flowState.log("You exploded your quad")
                         own['oporational'] = False
                         own['vtxOporational'] = False
 
 
-                    if (own['acc'] > 45):
+                    if (own['acc'] > 60):
                         if(cont.sensors['PropStrike'].positive):
                             flowState.log("Rotational prop strike")
                             own['damage'] += own['acc']*0.004
@@ -435,112 +436,112 @@ def main():
             av = own.getAngularVelocity(True)
 
             #if(propRay.positive==False):
-            if(not cont.sensors['PropStrike'].positive):
-                rx = (random.randrange(0,200)-100)/300
-                ry = (random.randrange(0,200)-100)/300
-                rz = (random.randrange(0,200)-100)/300
-                pwrx = (rx*propwash/(1+propwash*1.00005))*28
-                pwry = (ry*propwash/(1+propwash*1.00005))*28
-                pwrz = (rz*propwash/(1+propwash*1.00005))*28
+            #if(not cont.sensors['PropStrike'].positive):
+            rx = (random.randrange(0,200)-100)/300
+            ry = (random.randrange(0,200)-100)/300
+            rz = (random.randrange(0,200)-100)/300
+            pwrx = (rx*propwash/(1+propwash*1.00005))*28
+            pwry = (ry*propwash/(1+propwash*1.00005))*28
+            pwrz = (rz*propwash/(1+propwash*1.00005))*28
 
-                angularAcc = own['angularAcc']
+            angularAcc = own['angularAcc']
 
-                #AIR DAMPENING
-                #FD = .99978 #use for X
-                #FD = .99996 #use for true Z
-                tdm = .9 #totalDragMultiplier
-                sdm = 0.92 #sideDragMultiplier
-                fdm = 0.9 #frontalDragMultiplier
-                tdm = 1.3 #topDragMultiplier
+            #AIR DAMPENING
+            #FD = .99978 #use for X
+            #FD = .99996 #use for true Z
+            tdm = .9 #totalDragMultiplier
+            sdm = 0.92 #sideDragMultiplier
+            fdm = 0.9 #frontalDragMultiplier
+            tdm = 1.3 #topDragMultiplier
 
-                tdm = 0.0 #totalDragMultiplier
-                sdm = 1 #sideDragMultiplier
-                fdm = 1 #frontalDragMultiplier
-                tdm = 1 #topDragMultiplier
+            tdm = 0.0 #totalDragMultiplier
+            sdm = 1 #sideDragMultiplier
+            fdm = 1 #frontalDragMultiplier
+            tdm = 1 #topDragMultiplier
 
-                qd = [0.013014*dm*tdm*sdm,0.0111121*dm*fdm*tdm,0.0071081*dm*tdm] #air drag
-                qd = [tdm,tdm,tdm]
-                #own.setLinearVelocity([lv[0]/(1+qd[0]),lv[1]/(1+qd[1]),lv[2]/(1+qd[2])],True)
-                #own.setLinearVelocity([lv[0]/(1+qd[0]),lv[1]/(1+qd[1]),lv[2]],True)
-                #print(dm)
-                st = 1*dm #how quick can the motor/pid orient the quad
-                lav = own.getAngularVelocity(True)
-                xav = (((pitchForce)*st)+(lav[0]*(1-st)))+pwrx
-                yav = ((roleForce)*st)+(lav[1]*(1-st))+pwry
-                zav = yawForce+pwrz
-                #maxAngularAcceleration = 6
-                #maxAngularAccelerationYaw = 6
-                #xavDiff = pitchForce-lav[0]
-                #yavDiff = roleForce-lav[1]
-                #zavDiff = yawForce-lav[2]
-                #print(str(xavDiff)+":"+str(yavDiff))
-                #if abs(xavDiff) > maxAngularAcceleration:
-                #    sign = ((1 if xavDiff < 0 else 0)-.5)*2
-                #    xav = ((pitchForce+pwrx)*(0.5*dm))+(lav[0]*(1-(0.5*dm)))
-                #    #print("x "+str(xavDiff))
-                #if abs(yavDiff) > maxAngularAcceleration:
-                #    sign = ((1 if yavDiff < 0 else 0)-.5)*2
-                #    yav = ((roleForce+pwry)*(0.5*dm))+(lav[1]*(1-(0.5*dm)))
-                #    #print("y "+str(yavDiff))
-                #if abs(zavDiff) > maxAngularAccelerationYaw:
-                #    sign = ((1 if zavDiff < 0 else 0)-.5)*2
-                #    zav = ((yawForce+pwrz)*(0.5*dm))+(lav[2]*(1-(0.5*dm)))
-                #    #print("z "+str(zavDiff))
-                own.setAngularVelocity([xav,yav,zav], True)
-                    #if av [2] <0:
-                        #own.setAngularVelocity([av[0],av[1],0],False)
-                #thrust = thrust/((propwash*0.89)+1)
-                #maxRPM = g['rpm']#29.7230769
-                motorKV = droneSettings.motorKV
-                cellCount = droneSettings.batteryCellCount
-                cellVoltage = 4.2
-                maxRPM = motorKV*cellCount*cellVoltage
-                propAdvance = 5
+            qd = [0.013014*dm*tdm*sdm,0.0111121*dm*fdm*tdm,0.0071081*dm*tdm] #air drag
+            qd = [tdm,tdm,tdm]
+            #own.setLinearVelocity([lv[0]/(1+qd[0]),lv[1]/(1+qd[1]),lv[2]/(1+qd[2])],True)
+            #own.setLinearVelocity([lv[0]/(1+qd[0]),lv[1]/(1+qd[1]),lv[2]],True)
+            #print(dm)
+            st = 1*dm #how quick can the motor/pid orient the quad
+            lav = own.getAngularVelocity(True)
+            xav = (((pitchForce)*st)+(lav[0]*(1-st)))+pwrx
+            yav = ((roleForce)*st)+(lav[1]*(1-st))+pwry
+            zav = yawForce+pwrz
+            #maxAngularAcceleration = 6
+            #maxAngularAccelerationYaw = 6
+            #xavDiff = pitchForce-lav[0]
+            #yavDiff = roleForce-lav[1]
+            #zavDiff = yawForce-lav[2]
+            #print(str(xavDiff)+":"+str(yavDiff))
+            #if abs(xavDiff) > maxAngularAcceleration:
+            #    sign = ((1 if xavDiff < 0 else 0)-.5)*2
+            #    xav = ((pitchForce+pwrx)*(0.5*dm))+(lav[0]*(1-(0.5*dm)))
+            #    #print("x "+str(xavDiff))
+            #if abs(yavDiff) > maxAngularAcceleration:
+            #    sign = ((1 if yavDiff < 0 else 0)-.5)*2
+            #    yav = ((roleForce+pwry)*(0.5*dm))+(lav[1]*(1-(0.5*dm)))
+            #    #print("y "+str(yavDiff))
+            #if abs(zavDiff) > maxAngularAccelerationYaw:
+            #    sign = ((1 if zavDiff < 0 else 0)-.5)*2
+            #    zav = ((yawForce+pwrz)*(0.5*dm))+(lav[2]*(1-(0.5*dm)))
+            #    #print("z "+str(zavDiff))
+            own.setAngularVelocity([xav,yav,zav], True)
+                #if av [2] <0:
+                    #own.setAngularVelocity([av[0],av[1],0],False)
+            #thrust = thrust/((propwash*0.89)+1)
+            #maxRPM = g['rpm']#29.7230769
+            motorKV = droneSettings.motorKV
+            cellCount = droneSettings.batteryCellCount
+            cellVoltage = 4.2
+            maxRPM = motorKV*cellCount*cellVoltage
+            propAdvance = 5
 
-                maxThrust = droneSettings.thrust/10
-                propLoad = (((lvl[0]*.8)+(lvl[1]*.8)+(lvl[2]*1.2))*1000)/maxRPM
-                #propLoad = (lvl[2]*10000)/maxRPM
-                propAgressiveness = 1.4
-                propThrottleCurve = 1
+            maxThrust = droneSettings.thrust/10
+            propLoad = (((lvl[0]*.8)+(lvl[1]*.8)+(lvl[2]*1.2))*1000)/maxRPM
+            #propLoad = (lvl[2]*10000)/maxRPM
+            propAgressiveness = 1.4
+            propThrottleCurve = 1
 
-                currentRPM = maxRPM*throttlePercent
-                #propLoad = lvl[2]*currentRPM/maxRPM
+            currentRPM = maxRPM*throttlePercent
+            #propLoad = lvl[2]*currentRPM/maxRPM
 
 
 
-                #thrust = ((throttlePercent**propThrottleCurve)*.85)*(maxThrust-((propLoad**propThrottleCurve)/((maxSpeed**propThrottleCurve)/maxThrust)))
-                thrustSetpoint = throttlePercent#+(abs(yawPercent-.5)*.25)
-                if(thrustSetpoint>1):
-                    thrustSetpoint = 1
+            #thrust = ((throttlePercent**propThrottleCurve)*.85)*(maxThrust-((propLoad**propThrottleCurve)/((maxSpeed**propThrottleCurve)/maxThrust)))
+            thrustSetpoint = throttlePercent#+(abs(yawPercent-.5)*.25)
+            if(thrustSetpoint>1):
+                thrustSetpoint = 1
 
-                staticThrust = ((thrustSetpoint**propThrottleCurve))*maxThrust#*1000)#-(currentSpeed/maxSpeed)
+            staticThrust = ((thrustSetpoint**propThrottleCurve))*maxThrust#*1000)#-(currentSpeed/maxSpeed)
 
-                staticThrust = (thrustSetpoint**propThrottleCurve)*droneSettings.thrust
+            staticThrust = (thrustSetpoint**propThrottleCurve)*droneSettings.thrust
 
-                thrust = (staticThrust/10)-(propLoad)-(propwash*100)
-                #thrust = staticThrust-(propLoad)-(propwash*100)
-                if(thrust<0):
-                    thrust = 0
-                try:
-                    thrust = thrust.real
-                except:
-                    pass
-                propPitch = 4.6
-                propSize = 5
-                newtonToKg = 0.101971621
-                motorNumber = 4
-                currentRPM = throttlePercent*maxRPM
-                #thrust = 100*((4.392399*(10**-8))*currentRPM*((propSize**3.5)/math.sqrt(propPitch))*((4.23333*(10**-4))*currentRPM*propPitch-(currentSpeed/10)))*newtonToKg*motorNumber
+            thrust = (staticThrust/10)-(propLoad)-(propwash*100)
+            #thrust = staticThrust-(propLoad)-(propwash*100)
+            if(thrust<0):
+                thrust = 0
+            try:
+                thrust = thrust.real
+            except:
+                pass
+            propPitch = 4.6
+            propSize = 5
+            newtonToKg = 0.101971621
+            motorNumber = 4
+            currentRPM = throttlePercent*maxRPM
+            #thrust = 100*((4.392399*(10**-8))*currentRPM*((propSize**3.5)/math.sqrt(propPitch))*((4.23333*(10**-4))*currentRPM*propPitch-(currentSpeed/10)))*newtonToKg*motorNumber
 
-                #if(thrust<0):
-                #    thrust = 0
-                if 'lastThrust' in own:
-                    thrust = (thrust*st)+(own['lastThrust']*(1-st))
-                own['lastThrust'] = thrust
+            #if(thrust<0):
+            #    thrust = 0
+            if 'lastThrust' in own:
+                thrust = (thrust*st)+(own['lastThrust']*(1-st))
+            own['lastThrust'] = thrust
 
-                if(float(logic.raceTimer)!=0.0):
+            if(float(logic.raceTimer)!=0.0):
 
-                    own.applyForce([0,0,thrust],True)
+                own.applyForce([0,0,thrust],True)
 
             if(droneSettings.autoLevel):
                 maxAngle = 100
