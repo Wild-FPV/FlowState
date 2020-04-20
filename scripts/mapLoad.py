@@ -95,4 +95,4 @@ def spawnMapElements(mapData):
                 logic.flowState.track['launchPads'] = [newSpawnPoint]
 
             print(str(logic.flowState.track['launchPads']))
-    flowState.mapLoadStage = flowState.MAP_LOAD_STAGE_DONE
+    #flowState.mapLoadStage = flowState.MAP_LOAD_STAGE_DONE
