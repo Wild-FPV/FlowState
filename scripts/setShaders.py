@@ -9,7 +9,7 @@ shaders = graphicsSettings.shaders
 shading = graphicsSettings.shading
 specularity = graphicsSettings.specularity
 shadows = graphicsSettings.shadows
-frameRate = graphicsSettings.frameRate
+advancedGrass = graphicsSettings.advancedGrass
 
 if not "shaderInit" in owner:
     print("PLAYER FOUND! SETTING SHADERS!!!!!")

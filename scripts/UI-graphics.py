@@ -59,7 +59,7 @@ if(owner['init']!=True):
     mainMenuBlock = UI.BoxElement(window,[50,95],11,1, blockColor, 1)
     mainMenuText = UI.TextElement(window,mainMenuBlock.position, textColor, 0, "GRAPHIC")
 
-    frameRate = spawnBoolRow("Frame Rate",30,"frameRate",settingsAction)
+    advancedGrass = spawnBoolRow("Advanced Grass",30,"advancedGrass",settingsAction)
     shaders = spawnBoolRow("Filters",40,"shaders",settingsAction)
     specularity = spawnBoolRow("Specularity",50,"specularity",settingsAction)
     shadows = spawnBoolRow("Shadows",60,"shadows",settingsAction)

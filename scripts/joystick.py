@@ -69,7 +69,7 @@ def initAllThings():
     #print("max physics ticks per frame: "+str(logic.getMaxPhysicsFrame()))
     #logic.setLogicTicRate(60)
 
-    print("physics ticks per second: "+str(logic.getPhysicsTicRate()))
+    flowState.debug("physics ticks per second: "+str(logic.getPhysicsTicRate()))
     logic.ghosts = []
     av = own.getAngularVelocity(True)
     own['airSpeedDiff'] = 0
@@ -78,7 +78,7 @@ def initAllThings():
     own['angularAcc'] = 0
     own['settled'] = False
     own['settleStartTime'] = time.perf_counter()
-    print("SETTLE TIME IS "+str(own['settleStartTime']))
+    flowState.debug("SETTLE TIME IS "+str(own['settleStartTime']))
     own['settleDuration'] = 0
     own['settleFrameRates'] = []
     respawn()
@@ -97,7 +97,7 @@ def initAllThings():
     except:
         pass
 
-    print("init")
+    flowState.debug("init")
 
 def respawn():
     #if(flowState.getGameMode()==flowState.GAME_MODE_SINGLE_PLAYER):
@@ -116,26 +116,26 @@ def respawn():
         own['lastVel'] = [0,0,0]
 
     #put the quad on the launch pad
-    print("GOT LAUNCH PADS: "+str(logic.flowState.track['launchPads']))
-    print(len(logic.flowState.track['launchPads'])-1)
+    flowState.debug("GOT LAUNCH PADS: "+str(logic.flowState.track['launchPads']))
+    flowState.debug(len(logic.flowState.track['launchPads'])-1)
 
     launchPadNo = 0
     try:
-        print("GOT LAUNCH PADS: "+str(launchPadNo))
+        flowState.debug("GOT LAUNCH PADS: "+str(launchPadNo))
         rx = flowState.getRFEnvironment().getReceiver()
-        print("rx = "+str(rx))
+        flowState.debug("rx = "+str(rx))
         launchPadNo = rx.getChannel()#random.randint(0,len(logic.flowState.track['launchPads'])-1)
-        print("SET LAUNCH PAD NO!!!!"+str(launchPadNo))
+        flowState.debug("SET LAUNCH PAD NO!!!!"+str(launchPadNo))
     except Exception as e:
-        print(e)
+        flowState.error(e)
 
     launchPos = copy.deepcopy(logic.flowState.track['launchPads'][launchPadNo].position)
     launchOri = copy.deepcopy(logic.flowState.track['launchPads'][launchPadNo].orientation)
     own['launchPosition'] = [launchPos[0],launchPos[1],launchPos[2]+1]
     own.position = own['launchPosition']
     own.orientation = launchOri
-    print(logic.flowState.track['launchPads'])
-    print("SPAWNING!!!"+str(launchPadNo)+", "+str(launchPos))
+    flowState.debug(logic.flowState.track['launchPads'])
+    flowState.debug("SPAWNING!!!"+str(launchPadNo)+", "+str(launchPos))
 
 def resetGame():
     scene.active_camera = camera
@@ -174,7 +174,7 @@ def getAcc():
                     logic.maxGForce = 0
                 logic.gForce = force
         except Exception as e:
-            print(e)
+            flowState.error(e)
             own['armed'] = False
             logic.gForce = 0
             logic.maxGForce = 0
@@ -187,7 +187,7 @@ def getAcc():
             own['acc'] = abs(own['lastVel']-getArrayProduct(lv))
             own['lastAirSpeedDiff'] = lv[2]
         except Exception as e:
-            print(e)
+            flowState.error(e)
 
 def getStickPercentage(min,max,value):
     resolution = abs(min)+abs(max)
@@ -199,7 +199,7 @@ def setup():
     setCameraAngle(droneSettings.cameraTilt)
     if(logic.flowState.mapLoadStage == flowState.MAP_LOAD_STAGE_DONE):
         if 'setup' not in own:
-            print("Joystick.setup: we aren't setup yet!")
+            flowState.debug("Joystick.setup: we aren't setup yet!")
             own['setup'] = True
             own['canReset'] = False
             setupLaunchPads()
@@ -340,7 +340,6 @@ def main():
 
     own['armed'] = armed
     if(own['armed'] != own['lastArmState']):
-        print(own['armed'])
         own['lastArmState'] = own['armed']
 
     rotationActuator = cont.actuators["movement"]
@@ -386,7 +385,6 @@ def main():
     getAngularAcceleration()
     getAcc()
     if armed:
-        print(cont.sensors['PropStrike'].positive)
         if (own['oporational'] == True)&armed:
             if own['settled']:
                 if(flowState.getGameMode()==flowState.GAME_MODE_SINGLE_PLAYER) or (flowState.getGameMode()==flowState.GAME_MODE_TEAM_RACE):
