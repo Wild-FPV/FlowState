@@ -3,7 +3,7 @@ import copy
 logic = bge.logic
 class DroneSettings:
 
-    VALID_KEYS = ["autoLevel","cameraTilt","thrust","motorKV","pDrag","iDrag","batteryCellCount","weight","timeScale","yawExpo","pitchExpo","rollExpo","pitchRate","rollRate","yawRate","pitchSuperRate","rollSuperRate","yawSuperRate"]
+    VALID_KEYS = ["autoLevel","cameraTilt","thrust","motorKV","pDrag","iDrag","batteryCellCount","weight","timeScale","yawExpo","pitchExpo","rollExpo","pitchRate","rollRate","yawRate","pitchSuperRate","rollSuperRate","yawSuperRate","videoChannel"]
 
     def __init__(self, flowState, **kwargs):
         self.autoLevel = False

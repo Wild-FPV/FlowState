@@ -3,12 +3,12 @@ import copy
 logic = bge.logic
 class GraphicsSettings:
 
-    VALID_KEYS = ["frameRate","shaders","specularity","shadows","shading","raceLine","aspectRatio4x3"]
+    VALID_KEYS = ["advancedGrass","shaders","specularity","shadows","shading","raceLine","aspectRatio4x3"]
 
     def __init__(self, flowState, **kwargs):
         flowState.log("GraphicsSettings.init()")
         self.flowState = flowState
-        self.frameRate = False
+        self.advancedGrass = False
         self.shaders = True
         self.specularity = True
         self.shadows = True
@@ -48,12 +48,12 @@ class GraphicsSettings:
 
         return serializedSettings
 
-    def getFrameRate(self,frameRate):
-        return self.frameRate
+    def getAdvancedGrass(self):
+        return self.advancedGrass
 
-    def setFrameRate(self,frameRate):
-        self.frameRate = frameRate
-        render.showFramerate(frameRate)
+    def setAdvancedGrass(self,advancedGrass):
+        self.advancedGrass = advancedGrass
+        render.showFramerate(advancedGrass)
 
     def getShaders(self,shaders):
         return self.shaders

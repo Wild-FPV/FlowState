@@ -68,7 +68,6 @@ def passAction():
 
 if(owner['init']!=True):
     flowState.mapLoadStage = flowState.MAP_LOAD_STAGE_NONE
-    flowState.setModulesLoaded(False)
     flowState.setViewMode(flowState.VIEW_MODE_MENU)
     flowState.sceneHistory.append(logic.getCurrentScene().name)
     owner['init'] = True
