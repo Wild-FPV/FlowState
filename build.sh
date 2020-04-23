@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-buildFolder="build"
+buildFolder="FlowState"
 dllDestination="$buildFolder"
 gameDestination="$buildFolder"
 textureDestination="$buildFolder/textures"
@@ -58,3 +58,5 @@ do
    echo "copying $i to $gameDestination"
    cp $i $gameDestination
 done
+rm -rf FlowState.zip
+zip -r FlowState.zip FlowState
