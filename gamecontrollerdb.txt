@@ -22,6 +22,8 @@ d8041057000000000000504944564944,TBS Joystick,platform:Windows,leftx:a3,lefty:a0
 02040204000000000000504944564944,ADC,platform:Windows,rightx:a1,righty:a0,leftx:a4,lefty:a2,
 #FlySky FS-i6S (tested by user)
 4e28ff7f000000000000504944564944,FS-i6S emulator,platform:Windows,leftshoulder:b0,rightshoulder:b5,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:b1,righttrigger:b3,
+#vJoy user submitted
+3412adbe000000000000504944564944,vJoy Device,platform:Windows,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:a4,righttrigger:a5,
 
 #gamecontrollers
 03000000fa2d00000100000000000000,3DRUDDER,leftx:a0,lefty:a1,rightx:a5,righty:a2,platform:Windows,
