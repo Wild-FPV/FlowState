@@ -15,7 +15,8 @@ if not hasattr(bge, "__component__"):
 
 class Checkpoint(bge.types.KX_PythonComponent):
     args = OrderedDict([
-        ("checkpoint number", 1)
+        ("checkpoint number", 1),
+        ("Start Finish", False)
     ])
 
     def oncollision(self, obj, point, normal, points):
@@ -53,9 +54,24 @@ class Checkpoint(bge.types.KX_PythonComponent):
         self.collision = None
         self.object.collisionCallbacks = [self.oncollision]
         self.flightData = {"position":[],"throttlePercent":[]}
+        self.isStartFinish = args['Start Finish']
+        self.timeline = {}
 
         #print(self.object.collisionCallbacks)
         #print("start "+str(self.object.name))
+
+    def registerLap(self):
+        gatePass = {"channel":1, "time":time.time()}
+        gatePassEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.PLAYER_MESSAGE,flowState.getNetworkClient().clientID,gatePass)
+        if(flowState.getGameMode()==flowState.GAME_MODE_MULTIPLAYER):
+            flowState.debug("sending gate pass event")
+            flowState.getNetworkClient().sendEvent(gatePassEvent)
+        addTimelineEvent(gatePassEvent)
+
+    def addTimelineEvent(self,event):
+        eventTime = time.time()
+        self.timeline[eventTime] = event
+        return self.timeline
 
     def getEntryAngle(self, v1, v2, acute):
         angle = np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
@@ -147,6 +163,8 @@ class Checkpoint(bge.types.KX_PythonComponent):
                             self.playSound()
                             endTime = time.perf_counter()
                             print("checkpoint:"+str(hitCheckpointNumber)+" collected")
+                            if(self.isStartFinish):
+                                self.registerLap()
                         else:
                             print("checkpoint:"+str(hitCheckpointNumber)+" angle ("+str(difAngle)+") exceeds 90 "+str(hitCheckpointNumber))
                             #print(difAngle)
