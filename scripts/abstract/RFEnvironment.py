@@ -30,7 +30,7 @@ class RFEnvironment:
         self.emitters = [value for value in self.emitters if value != emitter] #removes all matching occurances of the rf emitter
 
     def addReceiver(self,receiver):
-        self.flowState.log("RFEnvironment.addReceiver()")
+        self.flowState.debug("RFEnvironment.addReceiver()")
         self.receivers.append(receiver)
 
     def removeReceiver(self,receiver):

@@ -103,8 +103,8 @@ def spawnBoolRow(label,height,key,action):
 
     box = UI.BoxElement(window,[47.5,height],1,0.5, blockColor, 1)
     text = UI.TextElement(window,[box.position[0],box.position[1]], textColor, 0, "INVERTED")
-    button = UI.UIButton(text,box,settingsAction)
-    invertedBooleanButton = UI.UIBooleanInput(button,text,key,droneSettings.__dict__[key])
+    button = UI.UIButton(text,box,settingsAction,key)
+    invertedBooleanButton = UI.UIBooleanInput(button,text,droneSettings.__dict__[key])
     return invertedBooleanButton
 
 if(owner['init']!=True):

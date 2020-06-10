@@ -31,15 +31,13 @@ def main():
         #cont.actuators['spawner']
         newObj = scene.addObject(asset['n'],owner,0)
         newObj['solid'] = True
-        if(asset['n'] == "asset start finish"):
-            logic.flowState.track['startFinishPlane'] = newObj
 
         if(asset['n'] == "asset launch pad"):
             newSpawnPoint = newObj
-            if logic.flowState.track['launchPads']!=[]:
-                logic.flowState.track['launchPads'].append(newSpawnPoint)
+            if logic.flowState.track.launchPads!=[]:
+                logic.flowState.track.launchPads.append(newSpawnPoint)
             else:
-                logic.flowState.track['launchPads'] = [newSpawnPoint]
-            print("setting launch pads "+str(logic.flowState.track['launchPads']))
+                logic.flowState.track.launchPads = [newSpawnPoint]
+            print("setting launch pads "+str(logic.flowState.track.launchPads))
 
 main()

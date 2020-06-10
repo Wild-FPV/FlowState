@@ -8,7 +8,13 @@ raceband = [5658,5695,5732,5769,5806,5843,5880,5917]
 if not hasattr(bge, "__component__"):
     render = bge.render
     logic = bge.logic
-    flowState = logic.flowState
+    try:
+        flowState = logic.flowState
+    except Exception as e:
+        print("VTX: "+str(e))
+        from scripts.abstract.FlowState import FlowState
+        logic.flowState = FlowState()
+        flowState = logic.flowState
 
 class VTX(bge.types.KX_PythonComponent):
     args = OrderedDict([
@@ -24,6 +30,7 @@ class VTX(bge.types.KX_PythonComponent):
         self.frequency = args['Frequency']
         self.signalStrength = 0
         self.object['vtx'] = self
+        self.spectating = False
         flowState.addRFEmitter(self)
 
     def getChannel(self):
@@ -43,7 +50,10 @@ class VTX(bge.types.KX_PythonComponent):
         self.frequency = raceband[channelNumber]
 
     def getFrequency(self):
-        return self.frequency
+        f = self.frequency
+        if(self.spectating):
+            f = 0
+        return f
 
     def setFrequency(self,frequency):
         self.frequency = frequency
@@ -59,11 +69,16 @@ class VTX(bge.types.KX_PythonComponent):
         self.power = power
 
     def getPitMode(self):
-        return self.pitMode
+        pitted = False
+        if(self.pitMode):
+            pitted = True
+        if(self.spectating):
+            pitted = True
+        return pitted
 
     def setPitMode(self,pitMode):
         self.pitMode = int(pitMode == True)
-        flowState.debug("vtx: setPidMode("+str(self.pitMode)+")")
 
     def update(self):
-        pass
+        if("spectate" in self.object):
+            self.spectating = self.object['spectate']

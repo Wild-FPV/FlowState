@@ -19,6 +19,7 @@ scene = logic.getCurrentScene()
 mass = own.mass
 gravity = 98*mass
 camera = scene.objects['cameraMain']
+own['quadCamera'] = camera
 game = scene.objects['Game']
 
 try:
@@ -45,7 +46,7 @@ def getAngularAcceleration():
 
 def setupLaunchPads():
     flowState.log("reconstructing RF environment")
-    launchPads = logic.flowState.track['launchPads']
+    launchPads = logic.flowState.trackState.launchPads
     playerVideoChannel = flowState.getDroneSettings().videoChannel
 
     #set all the track launch pads to be video receivers. we may create a dedicated ground station object for this in the future
@@ -59,8 +60,9 @@ def setupLaunchPads():
         flowState.log("channel = "+str(receiver.getFrequency()))
 
 def initAllThings():
+    flowState.debug(flowState)
     logic.player['camera'] = scene.objects['cameraMain']
-    logic.flowState.track['nextCheckpoint'] = 0
+    flowState.getRaceState().incrementCheckpoint()
 
     #logic.setPhysicsTicRate(120)
     #logic.setLogicTicRate(120)
@@ -82,7 +84,8 @@ def initAllThings():
     own['settleDuration'] = 0
     own['settleFrameRates'] = []
     respawn()
-    own['rxPosition'] = copy.deepcopy(logic.flowState.track['launchPads'][0].position) #needs to be removed now that we have RFEnvironment
+    flowState.resetRaceState()
+    own['rxPosition'] = copy.deepcopy(logic.flowState.trackState.launchPads[0].position) #needs to be removed now that we have RFEnvironment
     own['rxPosition'][2]+=100
     own['lastArmState'] = False
     own.mass = droneSettings.weight/1000
@@ -116,33 +119,31 @@ def respawn():
         own['lastVel'] = [0,0,0]
 
     #put the quad on the launch pad
-    flowState.debug("GOT LAUNCH PADS: "+str(logic.flowState.track['launchPads']))
-    flowState.debug(len(logic.flowState.track['launchPads'])-1)
+    flowState.debug("GOT LAUNCH PADS: "+str(logic.flowState.trackState.launchPads))
+    flowState.debug(len(logic.flowState.trackState.launchPads)-1)
 
     launchPadNo = 0
     try:
         flowState.debug("GOT LAUNCH PADS: "+str(launchPadNo))
         rx = flowState.getRFEnvironment().getReceiver()
         flowState.debug("rx = "+str(rx))
-        launchPadNo = rx.getChannel()#random.randint(0,len(logic.flowState.track['launchPads'])-1)
+        launchPadNo = rx.getChannel()#random.randint(0,len(logic.flowState.trackState.launchPads)-1)
         flowState.debug("SET LAUNCH PAD NO!!!!"+str(launchPadNo))
     except Exception as e:
         flowState.error(e)
 
-    launchPos = copy.deepcopy(logic.flowState.track['launchPads'][launchPadNo].position)
-    launchOri = copy.deepcopy(logic.flowState.track['launchPads'][launchPadNo].orientation)
+    launchPos = copy.deepcopy(logic.flowState.trackState.launchPads[launchPadNo].position)
+    launchOri = copy.deepcopy(logic.flowState.trackState.launchPads[launchPadNo].orientation)
     own['launchPosition'] = [launchPos[0],launchPos[1],launchPos[2]+1]
     own.position = own['launchPosition']
     own.orientation = launchOri
-    flowState.debug(logic.flowState.track['launchPads'])
+    flowState.debug(logic.flowState.trackState.launchPads)
     flowState.debug("SPAWNING!!!"+str(launchPadNo)+", "+str(launchPos))
 
 def resetGame():
     scene.active_camera = camera
     setCameraAngle(flowState.getDroneSettings().cameraTilt)
-    lapTimer = logic.flowState.track['startFinishPlane']
-    lapTimer['lap'] = -1
-    lapTimer['race time'] = 0.0
+
     for ghost in logic.ghosts:
         ghost['obj']['fpvCamera'].endObject()
         ghost['obj']['spectatorCamera'].endObject()
@@ -150,7 +151,6 @@ def resetGame():
     logic.ghosts = []
     own['canReset'] = False
     initAllThings()
-    logic.flowState.track['nextCheckpoint'] = 0
 
 def getArrayProduct(array):
     a = array[0]
@@ -394,12 +394,10 @@ def main():
                         own['oporational'] = False
                         own['vtxOporational'] = False
 
-
                     if (own['acc'] > 60):
                         if(cont.sensors['PropStrike'].positive):
                             flowState.log("Rotational prop strike")
                             own['damage'] += own['acc']*0.004
-
 
                     if (own['damage'] > 2.5):
                         flowState.log("Blown power train")
@@ -537,8 +535,7 @@ def main():
                 thrust = (thrust*st)+(own['lastThrust']*(1-st))
             own['lastThrust'] = thrust
 
-            if(float(logic.raceTimer)!=0.0):
-
+            if flowState.getRaceState().raceStartTime < time.time(): #player shouldn't be able to take off if the race hasn't started
                 own.applyForce([0,0,thrust],True)
 
             if(droneSettings.autoLevel):
@@ -569,7 +566,8 @@ def main():
             resetGame()
         if(flowState.getGameMode()==flowState.GAME_MODE_MULTIPLAYER):
             flowState.log("sending reset message")
-            resetEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.PLAYER_MESSAGE,flowState.getNetworkClient().clientID,"reset")
+            #resetEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.PLAYER_MESSAGE,flowState.getNetworkClient().clientID,{"reset":time.time()+10})
+            resetEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.PLAYER_RESET,flowState.getNetworkClient().clientID,{"reset":time.time()+10})
             flowState.getNetworkClient().sendEvent(resetEvent)
             own['canReset'] = False
         if(flowState.getGameMode()==flowState.GAME_MODE_TEAM_RACE):
@@ -593,7 +591,7 @@ def settle():
 def isSettled():
     if not own['settled']:
         logic.setTimeScale(0.001)
-        if(flowState.getGameMode()!=flowState.GAME_MODE_MULTIPLAYER):
+        if(flowState.getGameMode()==flowState.GAME_MODE_SINGLE_PLAYER):
             logic.isSettled = False
             fps = logic.getAverageFrameRate()
             avgFPSList = own['settleFrameRates']

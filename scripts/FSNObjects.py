@@ -15,8 +15,8 @@ MESSAGE_EXTRA_KEY = "MX"
 SERVER_EVENT_TYPE_KEY = "SET"
 PLAYER_EVENT_TYPE_KEY = "PET"
 
-MULTIPLAYER_MODE_1V1 = "1v1"
-MULTIPLAYER_MODE_TEAM = "tm"
+DEFAULT_GAME_FORMAT = "tm"
+
 #message types
 SERVER_STATE = 1
 SERVER_EVENT = 2
@@ -52,6 +52,7 @@ class ServerEvent:
     SERVER_QUIT = 2
     ACK = 3
     MAP_SET = 4
+    FORMAT_SET = 5
 
     def __init__(self, eventType, extra=None):
         self.messageType = SERVER_EVENT_TYPE_KEY
@@ -76,7 +77,7 @@ class ServerState(Message):
     #player state keys
     PLAYER_STATES_KEY = "PS"
     GAME_MODE_KEY = "GM"
-    def __init__(self, playerStates, gameMode=MULTIPLAYER_MODE_TEAM, extra=None):
+    def __init__(self, playerStates, gameMode=DEFAULT_GAME_FORMAT, extra=None):
         self.messageType = SERVER_STATE
         self.gameMode = gameMode
         self.playerStates = playerStates
@@ -136,6 +137,13 @@ class PlayerEvent:
     PLAYER_JOINED = 0
     PLAYER_QUIT = 1
     PLAYER_MESSAGE = 2
+    PLAYER_RESET = 3
+
+    #race event types
+    EVENT_LAP = 4
+    EVENT_RACE_FINISH = 5
+    EVENT_HOLE_SHOT = 6
+    EVENT_CHECKPOINT_COLLECT = 7
 
     def __init__(self, eventType, senderID, extra=None):
         self.messageType = PLAYER_EVENT

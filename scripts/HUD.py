@@ -2,8 +2,13 @@ import bge.logic as logic
 import math
 import random
 import os
+import time
 cont = logic.getCurrentController()
 own = cont.owner
+flowState = logic.flowState
+
+playerRXFrequency = flowState.getRFEnvironment().getCurrentVRX().getFrequency()
+
 errorLog = logic.getCurrentScene().objects['HUDError']
 rxChannel = logic.getCurrentScene().objects['HUDRXChannel']
 laps = logic.getCurrentScene().objects['HUDLapCount']
@@ -15,23 +20,19 @@ countdown = logic.getCurrentScene().objects['HUDCountdown']
 gForceCounter = logic.getCurrentScene().objects['HUDgForceCounter']
 aspectRatioCropper = logic.getCurrentScene().objects['aspectRatioCropper']
 #logic.flowState.setNotification(logic.getCurrentScene().objects['HUDNotification'])
-logic.getCurrentScene().objects['HUDNotification']['Text'] = logic.flowState.getNotification()['Text']
-laps['Text'] = "LAPS: "+logic.currentLap
-lastLap['Text'] = "LAST LAP: "+logic.lastLapTime
-bestLap['Text'] = "BEST LAP: "+logic.bestLapTime
-holeshot['Text'] = "HOLESHOT: "+str(logic.holeshotTime)
-errorLog['Text'] = "Error: "+logic.errorLog
+logic.getCurrentScene().objects['HUDNotification']['Text'] = flowState.getNotification()['Text']
+
 try:
+    #let's try to display the channel the user is on
+    ping = ""
+    if(flowState.getGameMode()==flowState.GAME_MODE_MULTIPLAYER):
+        ping = ", ping: "+str(int(flowState.getNetworkClient().ping))+"ms"
     camera = logic.player['camera']
-    #print("HUD camera = "+camera.name)
     vtx = camera['vtx']
-    #print("HUD VTX = "+str(vtx))
-    #print(str(type(vtx)))
-    #print("set rx channel")
-    rxChannel['Text'] = "VTX Channel: "+str(vtx.getChannel()+1)
+    rxChannel['Text'] = "VTX Channel: "+str(vtx.getChannel()+1)+ping
 except Exception as e:
-    logic.flowState.error(e)
-graphicsSettings = logic.flowState.getGraphicsSettings()
+    flowState.error(e)
+graphicsSettings = flowState.getGraphicsSettings()
 aspectRatioIs43 = graphicsSettings.aspectRatioIs4x3()
 if(aspectRatioIs43):
     aspectRatioCropper.visible = True
@@ -42,37 +43,62 @@ try:
 except:
     pass
 
-laps['Text'] = "LAPS: "+logic.currentLap
-lastLap['Text'] = "LAST LAP: "+logic.lastLapTime
-bestLap['Text'] = "BEST LAP: "+logic.bestLapTime
+def formatLapTime(lapTime):
+    result = ""
+    try:
+        result = str(format(lapTime, '.2f'))
+    except:
+        pass
+    return result
+
+lapsStr = str(flowState.getRaceState().getChannelLapCount(playerRXFrequency))
+lastLapStr = formatLapTime(flowState.getRaceState().getChannelLastLapTime(playerRXFrequency))
+bestLapStr = formatLapTime(flowState.getRaceState().getChannelBestLapTime(playerRXFrequency))
+holeshotStr = formatLapTime(flowState.getRaceState().getChannelHoleShot(playerRXFrequency))
+
+laps['Text'] = "LAPS: "+lapsStr
+lastLap['Text'] = "LAST LAP: "+lastLapStr
+bestLap['Text'] = "BEST LAP: "+bestLapStr
+holeshot['Text'] = "HOLESHOT: "+holeshotStr
 errorLog['Text'] = "Error: "+logic.errorLog
-countdownTime = logic.flowState.track['countdownTime']
-try:
-    if logic.countingDown:
 
-        if logic.countdown < 0:
-            own['countdown'] = 0
-            logic.countdown = 0
-        else:
-            logic.countdown = own['countdown']
-            countdown['Text'] = int((countdownTime+1)-own['countdown'])
-            if(own['countdown'] > countdownTime):
-                logic.countingDown = False
-                countdown['Text'] = "GO"
-            if(own['countdown'] < countdownTime):
-                logic.lapTimer['race time'] = 0.0
-                logic.raceTimer = 0
-            if(own['countdown'] > (countdownTime)):
-                logic.countingDown = False
+#flowState.debug("currentCheckpoint = "+str(flowState.getRaceState().currentCheckpoint))
+#flowState.debug("lastCheckpoint = "+str(flowState.track.getLastCheckpoint()))
+if flowState.getRaceState().raceStartTime > time.time(): #race starts in the future
+    countdown['Text'] = int(flowState.getRaceState().raceStartTime-time.time())+1
+else:
+    if flowState.getRaceState().raceStartTime+0.5 > time.time(): #we are less than one second into the race
+        countdown['Text'] = "GO"
     else:
-        if(own['countdown'] > countdownTime+0.5):
-            countdown['Text'] = ""
-except:
-    logic.countingDown = False
+        countdown['Text'] = ""
 
-timesText = "TIME: "+str(logic.raceTimer)
-for i in range(0,len(logic.lapTimes)):
+#let's show the user how well they did
+raceCompletionText = ""
+if flowState.getRaceState().raceCompleted():
+    raceCompletionText += "RACE COMPLETE: "
+    raceCompletionText += flowState.getSelectedMapName()
+raceCompletionText += "\n"
+fastX = 3
+fastXCon = flowState.getRaceState().getChannelFastestConcecutiveTime(playerRXFrequency,fastX)
+raceCompletionText += "fast "+str(fastX)+" consecutive laps: "+formatLapTime(fastXCon)
+raceCompletionText += "\n"
+lapsCompletedText = flowState.getRaceState().getChannelLapCount(playerRXFrequency)
+raceCompletionText += "laps: "+str(lapsCompletedText)
+raceCompletionText += "\n"
+timeCompletedText = flowState.getRaceState().getChannelRaceCompletionTime(playerRXFrequency)
+raceCompletionText += "time: "+formatLapTime(timeCompletedText)
+raceCompletionText += "\n"
+raceCompletionText += "Rank: "+str(flowState.getRaceState().getPlayerRanks().index(playerRXFrequency)+1)
+
+flowState.setNotification({"Text":raceCompletionText})
+logic.flowState.track['nextCheckpoint'] = -1
+
+
+
+timesText = "TIME: "+formatLapTime(flowState.getRaceState().getRaceTime())
+lapTimes = flowState.getRaceState().getChannelLapTimes(playerRXFrequency)
+for i in range(0,len(lapTimes)):
     timesText+='\n'
-    timesText+="LAP "+str(i+1)+": "+str(logic.lapTimes[i])
+    timesText+="LAP "+str(i+1)+": "+formatLapTime(lapTimes[i])
 
 times['Text'] = timesText

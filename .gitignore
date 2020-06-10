@@ -107,6 +107,7 @@ venv.bak/
 #windows build
 *.exe
 *.dll
+*.lnk
 
 #mac build
 *.app

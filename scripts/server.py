@@ -10,10 +10,18 @@ import platform
 import threading
 import copy
 import FSFileHandler
+from abstract.RaceFormat import RaceFormat
+import sys
+
+def versionIs3():
+    is3 = False
+    if (sys.version_info > (3, 0)):
+        is3 = True
+    return is3
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+#server.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 delim = b'\x1E'
 # takes the first argument from command prompt as IP address
 IP_address = socket.gethostname()
@@ -50,21 +58,54 @@ outboundMessages = []
 clientThreads = []
 
 #let's ask the user which map they'd like
-mapFileName = input("Please input map file name: ")
+if versionIs3():
+    mapFileName = input("Please input map file name: ")
+else:
+    mapFileName = str(raw_input("Please input map file name:"))
 if(mapFileName==""):
     mapFileName = "2019 MultiGP Qualifier.fmp"
 
-#let's ask the user which game mode they'd like
-gameModeList = [FSNObjects.MULTIPLAYER_MODE_1V1,FSNObjects.MULTIPLAYER_MODE_TEAM]
-gameModes = {0:"Free For All", 1: "Team Race"}
-gameModeString = ""
-for index in gameModes:
-    mode = gameModes[index]
-    gameModeString += str(index)+": "+mode+"\n"
-gameModeString += "Please input game mode: "
-gameModeSelection = int(input(gameModeString))
-gameMode = gameModeList[gameModeSelection]
 
+
+#let's ask the user which game mode they'd like
+#gameModeList = [FSNObjects.MULTIPLAYER_MODE_1V1,FSNObjects.MULTIPLAYER_MODE_TEAM]
+#gameModes = {0:"Free For All", 1: "Team Race"}
+#gameModeString = ""
+#for index in gameModes:
+#    mode = gameModes[index]
+#    gameModeString += str(index)+": "+mode+"\n"
+#gameModeString += "Please input game mode: "
+#gameModeSelection = int(input(gameModeString))
+#gameMode = gameModeList[gameModeSelection]
+
+#Let's ask the user what ranking will be based on
+raceFormatString = ""
+raceMetrics = {0:{"name":"First to X laps","format": RaceFormat.FORMAT_FIRST_TO_LAPS}, 1:{"name":"Most laps in time limit","format": RaceFormat.FORMAT_MOST_LAPS}, 2:{"name":"Fastest X, consecutive laps","format": RaceFormat.FORMAT_FASTEST_CONSECUTIVE}}
+for index in raceMetrics:
+    metric = raceMetrics[index]
+    name = metric['name']
+    raceFormatString += str(index)+": "+name+"\n"
+
+raceFormatString += "Please enter the scoring metrics in the sequence of their importance (E.G. 132): "
+if versionIs3():
+    formatSelection = str(input(raceFormatString))
+else:
+    formatSelection = str(raw_input(raceFormatString))
+raceFormatPriority = [raceMetrics[int(formatSelection[0])]['format'],raceMetrics[int(formatSelection[1])]['format'],raceMetrics[int(formatSelection[2])]['format']]
+
+#let's ask what the lap limit should be
+lapLimit = int(input("Please enter the lap limit: "))
+
+#let's ask what the time limit should be
+timeLimit = int(input("Please enter the time limit (in seconds): "))
+
+#let's ask what the time limit should be
+xConLaps = int(input("Number of consecutive laps for fastestXCon (1 for fastest single lap): "))
+
+raceFormat = RaceFormat(raceFormatPriority,timeLimit,lapLimit,xConLaps)
+formatContent = {"raceFormatPriority":raceFormatPriority,"timeLimit":timeLimit,"lapLimit":lapLimit,"consecutiveLapCount":xConLaps}
+
+#let's load the map
 mapContents = FSFileHandler.FileHandler().getMapContents(mapFileName)
 runEvent = threading.Event()
 runEvent.set()
@@ -103,13 +144,18 @@ def clientThread(conn, addr,runEvent):
                         clientStates[message.senderID] = {}
                         clientConnections[message.senderID] = {"socket":conn}
 
-
+                        #let's tell the client what map we are on
                         mapSetEvent = FSNObjects.ServerEvent(FSNObjects.ServerEvent.MAP_SET,mapContents)
                         send(mapSetEvent,conn)
 
-                        #let's let him know the state of the game
-                        serverState = FSNObjects.ServerState(clientStates,gameMode)
+                        #let's tell the client
+                        formatSetEvent = FSNObjects.ServerEvent(FSNObjects.ServerEvent.FORMAT_SET,formatContent)
+                        send(formatSetEvent,conn)
+
+                        #let's tell the client the state of the game
+                        serverState = FSNObjects.ServerState(clientStates,pickle.dumps(raceFormat))
                         send(serverState,conn)
+
                         #let's associate the player state with this socket
                         print(clientStates)
                         for key in clientStates:
@@ -129,11 +175,18 @@ def clientThread(conn, addr,runEvent):
                         print("player sent game message :"+str(message.extra))
                         send(message, conn)
 
+                    #A player reset event has occured
+                    if(message.eventType==FSNObjects.PlayerEvent.PLAYER_RESET):
+                        print("player sent game reset message :"+str(message.extra))
+                        send(message, conn)
+
 
                 #a player is sending an update about their current state
                 if messageType == FSNObjects.PLAYER_STATE:
+
                     #print("Got a player state. Updating client states")
                     message = FSNObjects.PlayerState.getMessage(frame)
+
                     senderID = message.senderID
                     newClientState = frame
                     clientStates[senderID] = newClientState
@@ -143,9 +196,13 @@ def clientThread(conn, addr,runEvent):
 
 
                 if(frame!=None):
+                    #sendAck(conn)
+
+                    #time.sleep(0.05)
+                    #if(time.perf_counter()-lastRecv > 1):
                     sendAck(conn)
                     broadcast(frame, conn)
-                    time.sleep(0.05)
+                    #print(frame)
 
         except Exception as e:
             print(traceback.format_exc())

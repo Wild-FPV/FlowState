@@ -8,7 +8,13 @@ raceband = [5658,5695,5732,5769,5806,5843,5880,5917]
 if not hasattr(bge, "__component__"):
     render = bge.render
     logic = bge.logic
-    flowState = logic.flowState
+    try:
+        flowState = logic.flowState
+    except Exception as e:
+        print("VTX: "+str(e))
+        from scripts.abstract.FlowState import FlowState
+        logic.flowState = FlowState()
+        flowState = logic.flowState
 
 class VRX(bge.types.KX_PythonComponent):
     args = OrderedDict([

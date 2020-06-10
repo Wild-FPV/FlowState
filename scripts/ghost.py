@@ -1,6 +1,8 @@
 import bge.logic as logic
 import time
 import math
+import FSNObjects
+from scripts.abstract.RaceState import RaceState
 scene = logic.getCurrentScene()
 owner = logic.getCurrentController().owner
 #logic.globalDict["playerQuad"] = owner
@@ -12,29 +14,25 @@ def main():
     if abs(time.perf_counter()-owner["lastGhostUpdate"]) > (1/60.0):
         owner["lastGhostUpdate"] = time.perf_counter()
         if(flowState.getGameMode()==flowState.GAME_MODE_SINGLE_PLAYER):
-            if(logic.flowState.track['startFinishPlane'] != None):
-                startFinishPlane = logic.flowState.track['startFinishPlane']
-                lap = startFinishPlane["lap"]
-
-                if lap < 0:
-                    logic.ghosts = []
-                else:
-                    if len(logic.ghosts)-1<lap:
-                        ghostObject = addGhostQuad()
-                        ghostObject["lap"] = lap
-                        logic.ghosts.append(createGhostData(owner,ghostObject))
-                        #print("recording new ghost")
-                    currentGhost = logic.ghosts[len(logic.ghosts)-1]
-                    #if(lap<6):
-                    recordGhostData(owner,currentGhost)
-                    if len(logic.ghosts)>1:
-                        for i in range(0,len(logic.ghosts)-1):
-                            lastGhost = logic.ghosts[i]
-                            setGhostData(lastGhost)
-                            if(lastGhost["obj"]["spectatorCamera"]["cameraName"] == "ghost0"):
-                                lastGhost["obj"]["spectatorCamera"]["cameraName"] = "ghostSpectate"+str(lap)
-                            if(lastGhost["obj"]["fpvCamera"]["cameraName"] == "ghost0"):
-                                lastGhost["obj"]["fpvCamera"]["cameraName"] = "ghostFPV"+str(lap)
+            lap = logic.flowState.getRaceState().getChannelLapCount(5658)
+            if lap < 0:
+                logic.ghosts = []
+            else:
+                if len(logic.ghosts)-1<lap:
+                    ghostObject = addGhostQuad()
+                    ghostObject["lap"] = lap
+                    logic.ghosts.append(createGhostData(owner,ghostObject))
+                currentGhost = logic.ghosts[len(logic.ghosts)-1]
+                #if(lap<6):
+                recordGhostData(owner,currentGhost)
+                if len(logic.ghosts)>1:
+                    for i in range(0,len(logic.ghosts)-1):
+                        lastGhost = logic.ghosts[i]
+                        setGhostData(lastGhost)
+                        if(lastGhost["obj"]["spectatorCamera"]["cameraName"] == "ghost0"):
+                            lastGhost["obj"]["spectatorCamera"]["cameraName"] = "ghostSpectate"+str(lap)
+                        if(lastGhost["obj"]["fpvCamera"]["cameraName"] == "ghost0"):
+                            lastGhost["obj"]["fpvCamera"]["cameraName"] = "ghostFPV"+str(lap)
         endTime = time.perf_counter()
         #print("main("+str(endTime-startTime))
 def getFrameData(obj,ghostObject):
@@ -62,7 +60,7 @@ def getFrameData(obj,ghostObject):
 
 def createGhostData(obj,ghostObject):
     startTime = time.perf_counter()
-    result =result = {"obj":ghostObject,"currentFrame":0,"frames":[getFrameData(obj,ghostObject)]}
+    result =result = {"obj":ghostObject,"currentFrame":0,"frames":[getFrameData(obj,ghostObject)],"spawnComplete":False}
     endTime = time.perf_counter()
     return result
 
@@ -83,17 +81,25 @@ def setGhostData(ghost):
     except:
         ghost["currentFrame"] = -1
         frame = 0
+        #countLap(ghost)
+    try:
+        vtx = ghost['obj']['fpvCamera']['vtx']
+        if(ghost['spawnComplete']==False):
+            ghost['spawnComplete'] = True
+            lap = ghost["obj"]["lap"]
+            #we don't want a ghost to be on the same video channel as the player
+            vtx.setChannel(lap+1)
+            vtx.setPitMode(0)
+        else:
+            if(frame==1):
+                countLap(ghost)
+    except:
+        pass
     if(ghost["currentFrame"] < 180):
        disableGhostCollision(ghost["obj"])
     else:
         enableGhostCollision(ghost["obj"])
-        lap = ghost["obj"]["lap"]
-        #we don't want a ghost to be on the same video channel as the player
-        if lap >= flowState.getDroneSettings().videoChannel:
-            ghost['obj']['fpvCamera']['vtx'].setChannel(lap+1)
-        else:
-            ghost['obj']['fpvCamera']['vtx'].setChannel(lap+1)
-        ghost['obj']['fpvCamera']['vtx'].setPitMode(0)
+
     ghost["obj"].position = ghost["frames"][frame]["pos"]
     ghost["obj"].orientation = ghost["frames"][frame]["ori"]
     #else:
@@ -102,6 +108,19 @@ def setGhostData(ghost):
     #    #ghost["obj"].position = [0,0,-100000]
     endTime = time.perf_counter()
     #print("createGhostData("+str(endTime-startTime))
+
+def countLap(ghost):
+    vtx = ghost['obj']['fpvCamera']['vtx']
+    vtxFrequency = vtx.getFrequency()
+    gatePass = {"channel":vtxFrequency, "time":time.time()}
+    clientNetwork = flowState.getNetworkClient()
+    if(clientNetwork == None):
+        clientID = None
+    else:
+        clientID = clientNetwork.clientID
+    gatePassEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.EVENT_LAP,clientID,gatePass)
+    flowState.getRaceState().addTimelineEvent(gatePassEvent,False)
+
 def addGhostQuad():
     actuator = owner.actuators["addGhost"]
     actuator.object = "ghostQuad"

@@ -25,6 +25,10 @@ d8041057000000000000504944564944,TBS Joystick,platform:Windows,leftx:a3,lefty:a0
 #vJoy user submitted
 3412adbe000000000000504944564944,vJoy Device,platform:Windows,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:a4,righttrigger:a5,
 
+#DIY
+#Teensy Arduino
+c0168204000000000000504944564944,Keyboard/Mouse/Joystick,platform:Windows,leftx:a0,lefty:a1,rightx:a3,righty:a2,lefttrigger:a4,righttrigger:a5,
+
 #gamecontrollers
 03000000fa2d00000100000000000000,3DRUDDER,leftx:a0,lefty:a1,rightx:a5,righty:a2,platform:Windows,
 03000000022000000090000000000000,8Bitdo NES30 Pro,a:b1,b:b0,back:b10,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,dpup:h0.1,leftshoulder:b6,leftstick:b13,lefttrigger:b8,leftx:a0,lefty:a1,rightshoulder:b7,rightstick:b14,righttrigger:b9,rightx:a3,righty:a4,start:b11,x:b4,y:b3,platform:Windows,

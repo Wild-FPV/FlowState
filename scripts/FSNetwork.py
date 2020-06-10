@@ -2,11 +2,13 @@
 import FSNClient
 import FSNObjects
 import socket
+import pickle
 import bge
 import math
 import time
 from uuid import getnode as get_mac
 import random
+from scripts.abstract.RaceFormat import RaceFormat
 logic = bge.logic
 scene = logic.getCurrentScene()
 flowState = logic.flowState
@@ -59,10 +61,18 @@ def clientMessageHandler(message):
             addNewPlayer(message.senderID)
         if(message.eventType == FSNObjects.ServerEvent.ACK):
             flowState.getNetworkClient().serverReady = True
+            flowState.getNetworkClient().updatePing()
         if(message.eventType == FSNObjects.ServerEvent.MAP_SET):
             print("we should load a map!")
             mapData = message.extra
             mapLoad.spawnMapElements(mapData)
+            print("map load complete!")
+        if(message.eventType == FSNObjects.ServerEvent.FORMAT_SET):
+            print("we should set the race format!")
+            raceFormatDict = message.extra
+            formatPriority = raceFormatDict['raceFormatPriority']
+            raceFormat = RaceFormat(formatPriority,raceFormatDict['timeLimit'],raceFormatDict['lapLimit'],raceFormatDict['consecutiveLapCount'])
+            flowState.getRaceState().setRaceFormat(raceFormat)
             print("map load complete!")
 
     #player state
@@ -99,11 +109,39 @@ def clientMessageHandler(message):
             addNewPlayer(message.senderID)
         if(message.eventType == FSNObjects.PlayerEvent.PLAYER_QUIT):
             removePlayer(message.senderID)
+
+        #player is sending some race state update
+        if(message.eventType == FSNObjects.PlayerEvent.EVENT_HOLE_SHOT):
+            flowState.getRaceState().addTimelineEvent(message, False)
+        if(message.eventType == FSNObjects.PlayerEvent.EVENT_LAP):
+            flowState.getRaceState().addTimelineEvent(message, False)
+        if(message.eventType == FSNObjects.PlayerEvent.EVENT_CHECKPOINT_COLLECT):
+            flowState.getRaceState().addTimelineEvent(message, False)
+        if(message.eventType == FSNObjects.PlayerEvent.EVENT_RACE_FINISH):
+            flowState.getRaceState().addTimelineEvent(message, False)
+
+        #player sent a message which should be broadcast as a generic game engine message
         if(message.eventType == FSNObjects.PlayerEvent.PLAYER_MESSAGE):
             messageBody = None
             MessageTo = None
             MessageFrom = None
             sendMessage(message.extra,messageBody,MessageTo,MessageFrom)
+
+        #A player is resetting the race and has sent a time at which the race should begin
+        if(message.eventType == FSNObjects.PlayerEvent.PLAYER_RESET):
+            message.extra = message.extra
+            print("client handling player reset event")
+            print(message.extra)
+            messageSubject = 'reset'
+            startTime = message.extra[messageSubject]
+            messageBody = startTime
+            MessageTo = None
+            MessageFrom = None
+            flowState._countdownTime = startTime-time.time()
+            print("current time is "+str(time.time()))
+            print("message time is "+str(startTime))
+            print("diff - "+str(startTime-time.time()))
+            sendMessage(messageSubject,messageBody,MessageTo,MessageFrom)
 
     #server state
     if messageType == FSNObjects.SERVER_STATE:
@@ -113,13 +151,13 @@ def clientMessageHandler(message):
 
         gameMode = message.gameMode
         print("game mode = "+str(gameMode))
-        if(gameMode == FSNObjects.MULTIPLAYER_MODE_1V1):
-            flowState.log("server setting game mode to 1v1")
-            flowState.setGameMode(flowState.GAME_MODE_MULTIPLAYER)
-        if(gameMode == FSNObjects.MULTIPLAYER_MODE_TEAM):
-            flowState.log("server setting game mode to team race")
-            flowState.setGameMode(flowState.GAME_MODE_TEAM_RACE)
-            flowState.setTimeLimit(600)
+        #if(gameMode == FSNObjects.MULTIPLAYER_MODE_1V1):
+        #    flowState.log("server setting game mode to 1v1")
+        #    flowState.setGameMode(flowState.GAME_MODE_MULTIPLAYER)
+        #if(gameMode == FSNObjects.MULTIPLAYER_MODE_TEAM):
+        #    flowState.log("server setting game mode to team race")
+        #    flowState.setGameMode(flowState.GAME_MODE_TEAM_RACE)
+        #    flowState.setTimeLimit(600)
 
         #handle the states of our peers
         peerStates = message.playerStates
@@ -161,7 +199,7 @@ def run():
     except:
         power = 0
         frequency = 0
-    myState = FSNObjects.PlayerState(flowState.getNetworkClient().clientID,None,position,orientation,color,frequency,power)
+    myState = FSNObjects.PlayerState(flowState.getNetworkClient().clientID,time.time(),position,orientation,color,frequency,power)
 
     flowState.getNetworkClient().updateState(myState)
     flowState.getNetworkClient().run()

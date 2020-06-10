@@ -6,6 +6,9 @@ from scripts.abstract.settings.DroneSettings import DroneSettings
 from scripts.abstract.settings.RadioSettings import RadioSettings
 from scripts.abstract.settings.GraphicsSettings import GraphicsSettings
 from scripts.abstract.RFEnvironment import RFEnvironment
+from scripts.abstract.RaceState import RaceState
+from scripts.abstract.RaceFormat import RaceFormat
+from scripts.abstract.TrackState import TrackState
 logic = bge.logic
 render = bge.render
 
@@ -40,7 +43,7 @@ class FlowState:
     #asset metadata types
     METADATA_GATE = {"id":-1}
     STATIC_METADATA = ["id"]
-    METADATA_CHECKPOINT = {"id":-1,"checkpoint order":1}
+    METADATA_CHECKPOINT = {"id":-1,"checkpoint order":1,"lap timer":False}
 
     #game modes
     GAME_MODE_EDITOR = 0
@@ -62,7 +65,9 @@ class FlowState:
     MAP_LOAD_STAGE_LOADING = 0
     MAP_LOAD_STAGE_DONE = 1
 
-    LOG_LEVEL = LOG_LEVEL_INFO
+    LOG_LEVEL = LOG_LEVEL_DEBUG
+
+    DEFAULT_RACE_FORMAT_PRIORITY = [RaceFormat.FORMAT_MOST_LAPS,RaceFormat.FORMAT_FIRST_TO_LAPS,RaceFormat.FORMAT_FASTEST_CONSECUTIVE]
 
     def __init__(self):
         self.__logFile = os.path.join(str(logic.expandPath("//")),"flowstate.log") #remove once propper logging is implemented
@@ -70,8 +75,11 @@ class FlowState:
         self.log("FlowState.init()")
         self._version = self.VERSION
         self._timeLimit = 120
+        self._lapLimit = 10
+        self._consecutiveLaps = 3
+        self._countdownTime = 5
         self._checkpoints = []
-        self._selectedMap = "2018 Regional Final.fmp"
+        self._selectedMap = "unspecified map"
         self._player = None #needs to be implemented
         self._HUDController = None #needs to be implemented
         self._gameMode = self.GAME_MODE_SINGLE_PLAYER
@@ -84,6 +92,7 @@ class FlowState:
         self.mapLoadStage = self.MAP_LOAD_STAGE_LOADING
         self.sceneHistory = []
         self.track = {"launchPads":[], "startFinishPlane":None,"countdownTime":3,"checkpoints":[],"nextCheckpoint":0,"lastCheckpoint":0}
+        self.trackState = TrackState(self)
         self._serverIP = "localhost"
         self._serverPort = 50002
         self.lastId = 0
@@ -94,6 +103,9 @@ class FlowState:
         self._graphicsSettings = GraphicsSettings(self)
         self._networkClient = None
         self.menuButtonColor = [0.3,0.3,0.3,0.6]
+        formatPriority = self.DEFAULT_RACE_FORMAT_PRIORITY
+        self._raceState = RaceState(self,formatPriority,timeLimit=self._timeLimit,lapLimit=self._lapLimit,consecutiveLapCount=self._consecutiveLaps)
+        self.shouldReset = False
 
     #eventually we should implement propper logging
     def debug(self,output):
@@ -181,6 +193,16 @@ class FlowState:
         self.sceneHistory = history #we don't typically want the scene history to be reset
         self.loadSaveSettings()
 
+    def getRaceState(self):
+        return self._raceState
+
+    def resetRaceState(self):
+        self.debug("FlowState.resetRaceState()")
+        #formatPriority = self.DEFAULT_RACE_FORMAT_PRIORITY #[RaceFormat.FORMAT_FIRST_TO_LAPS,RaceFormat.FORMAT_FASTEST_CONSECUTIVE,RaceFormat.FORMAT_MOST_LAPS]
+        raceFormat = copy.deepcopy(self._raceState.getRaceFormat())
+        newRaceState = RaceState(self,raceFormat.formatPriority,raceFormat.timeLimit,raceFormat.lapLimit,raceFormat.consecutiveLapCount)
+        self._raceState = newRaceState
+
     def getRFEnvironment(self):
         return self._rfEnvironment
 
@@ -203,7 +225,7 @@ class FlowState:
         self._rfEnvironment = RFEnvironment(self)
 
     def addMetadata(self,asset):
-        self.log("mapEditor.addMetadata("+str(asset)+")")
+        self.log("FlowState.addMetadata("+str(asset)+")")
         asset['metadata'] = {}
         if 'gate' in asset.name:
             asset['metadata'] = copy.deepcopy(self.METADATA_GATE)
@@ -230,6 +252,11 @@ class FlowState:
 
     def getSelectedMap(self):
         return self._selectedMap
+
+    def getSelectedMapName(self):
+        mapName = self._selectedMap
+        mapName = os.path.splitext(mapName)[0] #get rid of the file type
+        return mapName
 
     def selectMap(self,selectedMap):
         self._selectedMap = selectedMap
