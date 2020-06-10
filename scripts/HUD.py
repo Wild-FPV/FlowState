@@ -78,7 +78,7 @@ if flowState.getRaceState().raceCompleted():
     raceCompletionText += "RACE COMPLETE: "
     raceCompletionText += flowState.getSelectedMapName()
 raceCompletionText += "\n"
-fastX = 3
+fastX = flowState.getRaceState().getRaceFormat().consecutiveLapCount
 fastXCon = flowState.getRaceState().getChannelFastestConcecutiveTime(playerRXFrequency,fastX)
 raceCompletionText += "fast "+str(fastX)+" consecutive laps: "+formatLapTime(fastXCon)
 raceCompletionText += "\n"
