@@ -12,7 +12,7 @@ from uuid import getnode as get_mac
 class FSNClient:
     def __init__(self, address, port):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.server.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self.server.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.server.settimeout(10)
         self.serverIP = address#socket.gethostname()
         self.serverConnected = False
@@ -54,7 +54,6 @@ class FSNClient:
                             print("got invalid frame! "+str(frame))
                             frame = None
                         if(frame!=None):
-                            #print("got message: " + str(frame))
                             if(self.messageHandler!=None):
                                 self.messageHandler(frame)
                             self.buffer = self.buffer[delimIndex+1:-1]
@@ -79,7 +78,6 @@ class FSNClient:
 
     def sendFrame(self,data):
         data+=self.delim
-        #print("sending frame "+str(data))
         self.server.send(data)
 
     def updateState(self,newState):
@@ -104,14 +102,14 @@ class FSNClient:
 
     def run(self):
         if(self.isConnected()): #the socket is still connected
-            if(time.time()-self.lastSentTime>1.0):
-                print("server ping is over 1000ms")
+            if(time.time()-self.lastSentTime>10.0):
+                print("server unresponsive!")
             #if(self.serverReady):# or (time.time()-self.lastSentTime>1.0): #If we got a heartbeat, or if one second has passed
             if(self.serverReady):
-                if (time.time()-self.lastSentTime>0.016):
+                if (time.time()-self.lastSentTime>0.025):
                     self.lastSentTime = time.time()
+
                     messageOut = str(self.state).encode("utf-8")
                     self.sendFrame(messageOut)
-                    #print(messageOut)
                     self.serverReady = False #this gets set true once we get another ack
             frame = self.recvFrame() #let's recv and handle anything the server has sent

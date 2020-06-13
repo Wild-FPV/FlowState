@@ -48,133 +48,136 @@ def sendMessage(subject,body,to,messageFrom):
     logic.sendMessage(subject)
 
 def clientMessageHandler(message):
-    messageType = message[FSNObjects.MESSAGE_TYPE_KEY]
-    #   ("message handler called! "+str(messageType))
+    if(FSNObjects.MESSAGE_TYPE_KEY in message):
 
-    #server event
-    if messageType == FSNObjects.SERVER_EVENT_TYPE_KEY:
-        #print("handling server event")
-        #print("message = "+str(message))
-        message = FSNObjects.ServerEvent.getMessage(message)
-        if(message.eventType == FSNObjects.ServerEvent.PLAYER_JOINED):
-            #print("- player join event")
-            addNewPlayer(message.senderID)
-        if(message.eventType == FSNObjects.ServerEvent.ACK):
-            flowState.getNetworkClient().serverReady = True
-            flowState.getNetworkClient().updatePing()
-        if(message.eventType == FSNObjects.ServerEvent.MAP_SET):
-            print("we should load a map!")
-            mapData = message.extra
-            mapLoad.spawnMapElements(mapData)
-            print("map load complete!")
-        if(message.eventType == FSNObjects.ServerEvent.FORMAT_SET):
-            print("we should set the race format!")
-            raceFormatDict = message.extra
-            formatPriority = raceFormatDict['raceFormatPriority']
-            raceFormat = RaceFormat(formatPriority,raceFormatDict['timeLimit'],raceFormatDict['lapLimit'],raceFormatDict['consecutiveLapCount'])
-            flowState.getRaceState().setRaceFormat(raceFormat)
-            print("map load complete!")
+        messageType = message[FSNObjects.MESSAGE_TYPE_KEY]
+        #   ("message handler called! "+str(messageType))
 
-    #player state
-    if messageType == FSNObjects.PLAYER_STATE:
-        #print("handling player state")
-        #print("message = "+str(message))
-        message = FSNObjects.PlayerState.getMessage(message)
-        if(message.senderID in logic.peers):
-            peerObject = logic.peers[message.senderID]
-            peerObject.position = message.position
-            peerObject.orientation = message.orientation
-            try:
-                vtx = logic.player['camera']['vtx']
-                frequency = vtx.getFrequency()
-                power = vtx.getPower()*(1-vtx.getPitMode())
-                #print("player frequency = "+str(frequency))
-            except:
-                pass
-            if("fpvCamera" in peerObject):
-                camera = peerObject['fpvCamera']
-                if("vtx" in camera):
-                    vtx = camera['vtx']
-                    vtx.setPower(message.vtxPower)
-                    vtx.setFrequency(message.vtxFrequency)
-                    vtx.setPitMode(0)
+        #server event
+        if messageType == FSNObjects.SERVER_EVENT_TYPE_KEY:
+            #print("handling server event")
+            #print("message = "+str(message))
+            message = FSNObjects.ServerEvent.getMessage(message)
+            if(message.eventType == FSNObjects.ServerEvent.PLAYER_JOINED):
+                #print("- player join event")
+                addNewPlayer(message.senderID)
+            if(message.eventType == FSNObjects.ServerEvent.ACK):
+                flowState.getNetworkClient().serverReady = True
+                flowState.getNetworkClient().updatePing()
+            if(message.eventType == FSNObjects.ServerEvent.MAP_SET):
+                print("we should load a map!")
+                mapData = message.extra
+                mapLoad.spawnMapElements(mapData)
+                print("map load complete!")
+            if(message.eventType == FSNObjects.ServerEvent.FORMAT_SET):
+                print("we should set the race format!")
+                raceFormatDict = message.extra
+                formatPriority = raceFormatDict['raceFormatPriority']
+                raceFormat = RaceFormat(formatPriority,raceFormatDict['timeLimit'],raceFormatDict['lapLimit'],raceFormatDict['consecutiveLapCount'])
+                flowState.getRaceState().setRaceFormat(raceFormat)
+                print("map load complete!")
 
-    #player event
-    if messageType == FSNObjects.PLAYER_EVENT:
-        print("handling player event")
-        print("message = "+str(message))
-        message = FSNObjects.PlayerEvent.getMessage(message)
-        if(message.eventType == FSNObjects.PlayerEvent.PLAYER_JOINED):
-            #print("- player join event")
-            addNewPlayer(message.senderID)
-        if(message.eventType == FSNObjects.PlayerEvent.PLAYER_QUIT):
-            removePlayer(message.senderID)
-
-        #player is sending some race state update
-        if(message.eventType == FSNObjects.PlayerEvent.EVENT_HOLE_SHOT):
-            flowState.getRaceState().addTimelineEvent(message, False)
-        if(message.eventType == FSNObjects.PlayerEvent.EVENT_LAP):
-            flowState.getRaceState().addTimelineEvent(message, False)
-        if(message.eventType == FSNObjects.PlayerEvent.EVENT_CHECKPOINT_COLLECT):
-            flowState.getRaceState().addTimelineEvent(message, False)
-        if(message.eventType == FSNObjects.PlayerEvent.EVENT_RACE_FINISH):
-            flowState.getRaceState().addTimelineEvent(message, False)
-
-        #player sent a message which should be broadcast as a generic game engine message
-        if(message.eventType == FSNObjects.PlayerEvent.PLAYER_MESSAGE):
-            messageBody = None
-            MessageTo = None
-            MessageFrom = None
-            sendMessage(message.extra,messageBody,MessageTo,MessageFrom)
-
-        #A player is resetting the race and has sent a time at which the race should begin
-        if(message.eventType == FSNObjects.PlayerEvent.PLAYER_RESET):
-            message.extra = message.extra
-            print("client handling player reset event")
-            print(message.extra)
-            messageSubject = 'reset'
-            startTime = message.extra[messageSubject]
-            messageBody = startTime
-            MessageTo = None
-            MessageFrom = None
-            flowState._countdownTime = startTime-time.time()
-            print("current time is "+str(time.time()))
-            print("message time is "+str(startTime))
-            print("diff - "+str(startTime-time.time()))
-            sendMessage(messageSubject,messageBody,MessageTo,MessageFrom)
-
-    #server state
-    if messageType == FSNObjects.SERVER_STATE:
-        print("handling server state")
-        print("message = "+str(message))
-        message = FSNObjects.ServerState.getMessage(message)
-
-        gameMode = message.gameMode
-        print("game mode = "+str(gameMode))
-        #if(gameMode == FSNObjects.MULTIPLAYER_MODE_1V1):
-        #    flowState.log("server setting game mode to 1v1")
-        #    flowState.setGameMode(flowState.GAME_MODE_MULTIPLAYER)
-        #if(gameMode == FSNObjects.MULTIPLAYER_MODE_TEAM):
-        #    flowState.log("server setting game mode to team race")
-        #    flowState.setGameMode(flowState.GAME_MODE_TEAM_RACE)
-        #    flowState.setTimeLimit(600)
-
-        #handle the states of our peers
-        peerStates = message.playerStates
-        for key in peerStates:
-            if(key==flowState.getNetworkClient().clientID):
-                pass
-            else:
-                peerState = peerStates[key]
-                #print(peerStates)
-                message = FSNObjects.PlayerState.getMessage(peerState)
-                newObj = scene.addObject("playerQuad",logic.player,0)
-                print("ADDING NEW PLAYER OBJECT!!!!!")
-                logic.peers[key] = newObj #lets add this new player model to a dict so we can reference it later
-                #print(logic.peers)
-                peerObject = logic.peers[key]
+        #player state
+        if messageType == FSNObjects.PLAYER_STATE:
+            message = FSNObjects.PlayerState.getMessage(message)
+            if(message.senderID in logic.peers):
+                peerObject = logic.peers[message.senderID]
                 peerObject.position = message.position
                 peerObject.orientation = message.orientation
+                try:
+                    vtx = logic.player['camera']['vtx']
+                    frequency = vtx.getFrequency()
+                    power = vtx.getPower()*(1-vtx.getPitMode())
+                    #print("player frequency = "+str(frequency))
+                except:
+                    pass
+                if("fpvCamera" in peerObject):
+                    camera = peerObject['fpvCamera']
+                    if("vtx" in camera):
+                        vtx = camera['vtx']
+                        vtx.setPower(message.vtxPower)
+                        vtx.setFrequency(message.vtxFrequency)
+                        vtx.setPitMode(0)
+
+        #player event
+        if messageType == FSNObjects.PLAYER_EVENT:
+            print("handling player event = "+str(message))
+            message = FSNObjects.PlayerEvent.getMessage(message)
+            if(message.eventType == FSNObjects.PlayerEvent.PLAYER_JOINED):
+                print("- player join event")
+                addNewPlayer(message.senderID)
+            if(message.eventType == FSNObjects.PlayerEvent.PLAYER_QUIT):
+                print("- player quit event")
+                removePlayer(message.senderID)
+
+            #player is sending some race state update
+            if(message.eventType == FSNObjects.PlayerEvent.EVENT_HOLE_SHOT):
+                #print("- player holeshot event")
+                flowState.getRaceState().addTimelineEvent(message, False)
+            if(message.eventType == FSNObjects.PlayerEvent.EVENT_LAP):
+                #print("- player lap event")
+                flowState.getRaceState().addTimelineEvent(message, False)
+            if(message.eventType == FSNObjects.PlayerEvent.EVENT_CHECKPOINT_COLLECT):
+                #print("- player checkpoint event")
+                flowState.getRaceState().addTimelineEvent(message, False)
+            if(message.eventType == FSNObjects.PlayerEvent.EVENT_RACE_FINISH):
+                #print("- player race finish event")
+                flowState.getRaceState().addTimelineEvent(message, False)
+
+            #player sent a message which should be broadcast as a generic game engine message
+            if(message.eventType == FSNObjects.PlayerEvent.PLAYER_MESSAGE):
+                print("- player gaem engine message event")
+                messageBody = None
+                MessageTo = None
+                MessageFrom = None
+                sendMessage(message.extra,messageBody,MessageTo,MessageFrom)
+
+            #A player is resetting the race and has sent a time at which the race should begin
+            if(message.eventType == FSNObjects.PlayerEvent.PLAYER_RESET):
+                print("- player reset event")
+                message.extra = message.extra
+                messageSubject = 'reset'
+                startTime = message.extra[messageSubject]
+                messageBody = startTime
+                MessageTo = None
+                MessageFrom = None
+                flowState._countdownTime = startTime-time.time()
+                print("current time is "+str(time.time()))
+                print("message time is "+str(startTime))
+                print("diff - "+str(startTime-time.time()))
+                sendMessage(messageSubject,messageBody,MessageTo,MessageFrom)
+
+        #server state
+        if messageType == FSNObjects.SERVER_STATE:
+            #print("handling server state")
+            message = FSNObjects.ServerState.getMessage(message)
+
+            gameMode = message.gameMode
+            #if(gameMode == FSNObjects.MULTIPLAYER_MODE_1V1):
+            #    flowState.log("server setting game mode to 1v1")
+            #    flowState.setGameMode(flowState.GAME_MODE_MULTIPLAYER)
+            #if(gameMode == FSNObjects.MULTIPLAYER_MODE_TEAM):
+            #    flowState.log("server setting game mode to team race")
+            #    flowState.setGameMode(flowState.GAME_MODE_TEAM_RACE)
+            #    flowState.setTimeLimit(600)
+
+            #handle the states of our peers
+            peerStates = message.playerStates
+            for key in peerStates:
+                if(key==flowState.getNetworkClient().clientID):
+                    pass
+                else:
+                    newObj = scene.addObject("playerQuad",logic.player,0)
+                    logic.peers[key] = newObj #lets add this new player model to a dict so we can reference it later
+                    #print(logic.peers)
+                    peerObject = logic.peers[key]
+
+                    peerState = peerStates[key]
+                    message = FSNObjects.PlayerState.getMessage(peerState)
+                    peerObject.position = message.position
+                    peerObject.orientation = message.orientation
+    else:
+        print("WARNING: invalid message!!! "+str(message))
 
 
 def setup():

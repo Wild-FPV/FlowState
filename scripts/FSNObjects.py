@@ -34,9 +34,8 @@ class Message:
 
     @staticmethod
     def getMessage(message):
-        Message.senderID = message[SENDER_ID_KEY]
-        Message.messageType = message[MESSAGE_TYPE_KEY]
-        Message.extra = message[MESSAGE_EXTRA_KEY]
+        obj = Message(message[SENDER_ID_KEY],message[MESSAGE_TYPE_KEY],message[MESSAGE_EXTRA_KEY])
+        return obj
 
     def __str__(self):
         message = {}
@@ -90,7 +89,7 @@ class ServerState(Message):
 
     def __str__(self):
         message = {}
-        message[MESSAGE_TYPE_KEY] = self.messageType
+        message[MESSAGE_TYPE_KEY] = SERVER_STATE
         message[ServerState.GAME_MODE_KEY] = self.gameMode
         message[ServerState.PLAYER_STATES_KEY] = self.playerStates
         message[MESSAGE_EXTRA_KEY] = self.extra
@@ -123,7 +122,7 @@ class PlayerState(Message):
     def __str__(self):
         message = {}
         message[SENDER_ID_KEY] = self.senderID
-        message[MESSAGE_TYPE_KEY] = self.messageType
+        message[MESSAGE_TYPE_KEY] = PLAYER_STATE
         message[MESSAGE_EXTRA_KEY] = self.extra
         message[self.PLAYER_POSITION_KEY] = self.position
         message[self.PLAYER_ORIENTATION_KEY] = self.orientation
@@ -158,7 +157,7 @@ class PlayerEvent:
 
     def __str__(self):
         message = {}
-        message[MESSAGE_TYPE_KEY] = self.messageType
+        message[MESSAGE_TYPE_KEY] = PLAYER_EVENT
         message[SENDER_ID_KEY] = self.senderID
         message[PLAYER_EVENT_TYPE_KEY] = self.eventType
         message[MESSAGE_EXTRA_KEY] = self.extra

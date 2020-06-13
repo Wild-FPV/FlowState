@@ -8,10 +8,12 @@ import traceback
 import time
 import platform
 import threading
+from threading import RLock
 import copy
 import FSFileHandler
 from abstract.RaceFormat import RaceFormat
 import sys
+
 
 def versionIs3():
     is3 = False
@@ -21,7 +23,7 @@ def versionIs3():
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-#server.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+server.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 delim = b'\x1E'
 # takes the first argument from command prompt as IP address
 IP_address = socket.gethostname()
@@ -57,13 +59,15 @@ clientConnections = {}
 outboundMessages = []
 clientThreads = []
 
+lock = RLock()
+
 #let's ask the user which map they'd like
 if versionIs3():
     mapFileName = input("Please input map file name: ")
 else:
     mapFileName = str(raw_input("Please input map file name:"))
 if(mapFileName==""):
-    mapFileName = "2019 MultiGP Qualifier.fmp"
+    mapFileName = "The Shrine.fmp"
 
 
 
@@ -110,6 +114,15 @@ mapContents = FSFileHandler.FileHandler().getMapContents(mapFileName)
 runEvent = threading.Event()
 runEvent.set()
 
+def serverThread(a,b,runEvent):
+    lastSend = time.perf_counter()
+    while runEvent.is_set():
+        #if(time.perf_counter()-lastSend > 0.016):
+        if(time.perf_counter()-lastSend > 0.0):
+            lastSend = time.perf_counter()
+            sendPlayerUpdates()
+
+
 def clientThread(conn, addr,runEvent):
     connectionOpen = True
     # sends a message to the client whose user object is conn
@@ -121,88 +134,28 @@ def clientThread(conn, addr,runEvent):
             print("client became unresponseive")
             break
         try:
-            buffer += conn.recv(1)
-            if delim in buffer:
+            buffer += conn.recv(2048)
+            while(len(buffer)>0):
                 delimIndex = buffer.find(delim)
-                frame = buffer[:delimIndex]
-                frame = ast.literal_eval(frame.decode("utf-8"))
-                lastRecv = time.perf_counter()
-                #print("FOUND THE END OF THE MESSAGE!!!!")
-                #print("frame: "+str(frame))
-                messageType = frame[FSNObjects.MESSAGE_TYPE_KEY]
-                buffer = buffer[delimIndex+1:-1]
-                #print("remaining buffer = "+str(buffer))
 
-                #a player is sending an event
-                if messageType == FSNObjects.PLAYER_EVENT:
-                    message = FSNObjects.PlayerEvent.getMessage(frame)
+                #if delim in buffer:
+                if(delimIndex!=-1):
+                    frame = buffer[:delimIndex]
+                    buffer = buffer[delimIndex+1:]
+                    frame = ast.literal_eval(frame.decode("utf-8"))
+                    lastRecv = time.perf_counter()
+                    messageType = frame[FSNObjects.MESSAGE_TYPE_KEY]
 
-                    #a new player is joining the game
-                    if(message.eventType==FSNObjects.PlayerEvent.PLAYER_JOINED):
-                        print("player joined")
-                        print(message)
-                        clientStates[message.senderID] = {}
-                        clientConnections[message.senderID] = {"socket":conn}
+                    # a player is senting an event
+                    if messageType == FSNObjects.PLAYER_EVENT:
+                        connectionOpen = handlePlayerEvent(frame,conn)
+                        if(connectionOpen == False):
+                            break
 
-                        #let's tell the client what map we are on
-                        mapSetEvent = FSNObjects.ServerEvent(FSNObjects.ServerEvent.MAP_SET,mapContents)
-                        send(mapSetEvent,conn)
-
-                        #let's tell the client
-                        formatSetEvent = FSNObjects.ServerEvent(FSNObjects.ServerEvent.FORMAT_SET,formatContent)
-                        send(formatSetEvent,conn)
-
-                        #let's tell the client the state of the game
-                        serverState = FSNObjects.ServerState(clientStates,pickle.dumps(raceFormat))
-                        send(serverState,conn)
-
-                        #let's associate the player state with this socket
-                        print(clientStates)
-                        for key in clientStates:
-                            clientSocket = clientConnections[key]['socket']
-                            if(clientSocket == conn):
-                                clientStates[key]['senderID'] = message.senderID
-                        #let's let the new player know the state of the game
-
-                    #A player has just quit the game
-                    if(message.eventType==FSNObjects.PlayerEvent.PLAYER_QUIT):
-                        print("player quit: "+str(message.senderID))
-                        connectionOpen = False
-                        break
-
-                    #A player event has occured
-                    if(message.eventType==FSNObjects.PlayerEvent.PLAYER_MESSAGE):
-                        print("player sent game message :"+str(message.extra))
-                        send(message, conn)
-
-                    #A player reset event has occured
-                    if(message.eventType==FSNObjects.PlayerEvent.PLAYER_RESET):
-                        print("player sent game reset message :"+str(message.extra))
-                        send(message, conn)
-
-
-                #a player is sending an update about their current state
-                if messageType == FSNObjects.PLAYER_STATE:
-
-                    #print("Got a player state. Updating client states")
-                    message = FSNObjects.PlayerState.getMessage(frame)
-
-                    senderID = message.senderID
-                    newClientState = frame
-                    clientStates[senderID] = newClientState
-                    clientConnections[senderID]['socket'] = conn
-                    #print(clientStates)
-                    #let the client know they can send more data
-
-
-                if(frame!=None):
-                    #sendAck(conn)
-
-                    #time.sleep(0.05)
-                    #if(time.perf_counter()-lastRecv > 1):
-                    sendAck(conn)
-                    broadcast(frame, conn)
-                    #print(frame)
+                    #a player is sending an update about their current state
+                    if messageType == FSNObjects.PLAYER_STATE:
+                        sendAck(conn)
+                        handlePlayerState(frame,conn)
 
         except Exception as e:
             print(traceback.format_exc())
@@ -217,70 +170,153 @@ def clientThread(conn, addr,runEvent):
     except:
         print(traceback.format_exc())
     print("client thread ending")
+def handlePlayerState(frame,conn):
+    message = FSNObjects.PlayerState.getMessage(frame)
+
+    senderID = message.senderID
+    newClientState = frame
+    with lock:
+        clientStates[senderID] = newClientState
+        clientConnections[senderID]['readyForData'] = True
+
+def handlePlayerEvent(frame,conn):
+    print("handlePlayerEvent")
+    message = FSNObjects.PlayerEvent.getMessage(frame)
+
+    #a new player is joining the game
+    if(message.eventType==FSNObjects.PlayerEvent.PLAYER_JOINED):
+        print("- player joined")
+        broadcast(message,conn)
+        #print("lock2 waiting...")
+        with lock:
+            #print("lock2 aquired")
+            clientStates[message.senderID] = {}
+            clientConnections[message.senderID] = {"socket":conn,"readyForData":True}
+            #print("lock2 unlock")
+
+        #let's tell the client what map we are on
+        mapSetEvent = FSNObjects.ServerEvent(FSNObjects.ServerEvent.MAP_SET,mapContents)
+        send(mapSetEvent,conn)
+
+        #let's tell the client
+        formatSetEvent = FSNObjects.ServerEvent(FSNObjects.ServerEvent.FORMAT_SET,formatContent)
+        send(formatSetEvent,conn)
+
+        #let's tell the client the state of the game
+        serverState = FSNObjects.ServerState(clientStates,pickle.dumps(raceFormat))
+        send(serverState,conn)
+
+        #let's associate the player state with this socket
+        #print("lock3 waiting...")
+        with lock:
+            #print("lock3")
+            for key in clientStates:
+                clientSocket = clientConnections[key]['socket']
+                if(clientSocket == conn):
+                    clientStates[key]['senderID'] = message.senderID
+            #print("lock3 unlock")
+        #let's let the new player know the state of the game
+    #A player has just quit the game
+    if(message.eventType==FSNObjects.PlayerEvent.PLAYER_QUIT):
+        print("- player quit: "+str(message.senderID))
+        broadcast(message,conn)
+        connectionOpen = False
+        return False
+
+    #A player event has occured
+    if(message.eventType==FSNObjects.PlayerEvent.PLAYER_MESSAGE):
+        print("- player sent game message :"+str(message.extra))
+        broadcast(message,conn)
+        send(message, conn)
+
+    #A player reset event has occured
+    if(message.eventType==FSNObjects.PlayerEvent.PLAYER_RESET):
+        print("- player sent game reset message :"+str(message.extra))
+        broadcast(message,conn)
+        send(message, conn)
+    return True
 
 """Using the below function, we broadcast the message to all
 clients who's object is not the same as the one sending
 the message """
 def sendAck(socket):
-    #print("sending ack to "+str(socket.getpeername()))
     ack = FSNObjects.ServerEvent(FSNObjects.ServerEvent.ACK)
     send(ack,socket)
 
-def broadcast(message, socket):
-    #print("broadcast()")
+def sendPlayerUpdates():
+    with lock:
+        tempStates = copy.deepcopy(clientStates)
+    for senderID in tempStates:
+        clientState = tempStates[senderID]
+        if(clientState!={}): #this can be the case if the client just joined and we don't have a state yet
+            if(len(str(clientState))<5):
+                print("AHHHHHHH!!!!!!!! THERE WAS AN EMPTY CLIENT STATE THAT SLIPPED THROUGH!!!!")
+            clientSocket = clientConnections[senderID]['socket']
+            broadcast(clientState,clientSocket,highPriority=False)
+
+def broadcast(message, socket, highPriority=True):
+    with lock:
+        senderIDs = clientConnections.keys()
     try:
-        for key in clientConnections:
-            clientSocket = clientConnections[key]['socket']
-            if clientSocket!=socket:
+        for senderID in senderIDs:
+            with lock:
+                clientSocket = clientConnections[senderID]['socket']
+                clientReady = clientConnections[senderID]['readyForData']
+            if clientSocket!=socket and (clientReady or highPriority):
+                with lock:
+                    clientConnections[senderID]['readyForData'] = False
                 send(message,clientSocket)
-    except:
-        pass
+    except Exception as e:
+        print(traceback.format_exc())
 
 def send(message, socket):
-    #print("send()")
-    #global outboundMessages
-
-    #outboundMessages.append({"data":message,"socket":socket})
     try:
         dataOut = str(message).encode("utf-8")+delim
-        #print("sending message to client: "+str(socket.getpeername()[0])+": "+str(dataOut))
-        socket.send(dataOut)
+        with lock:
+            socket.send(dataOut)
     except Exception as e:
         print(traceback.format_exc())
         socket.close()
-        # if the link is broken, we remove the client
-        #remove(socket)
 
 def remove(socketToRemove):
     global clientStates
     global clientConnections
-    print("remove()")
     connectionToDelete = None
     stateToDelete = None
     removedID = None
 
-    for key in clientStates:
-        clientSocket = clientConnections[key]['socket']
-        if(clientSocket == socketToRemove):
-            print("disconnecting client: "+str(key)+" on socket: "+str(socketToRemove))
-            removedID = key
+    with lock:
+        for key in clientStates:
+            clientSocket = clientConnections[key]['socket']
+            if(clientSocket == socketToRemove):
+                print("disconnecting client: "+str(key)+" on socket: "+str(socketToRemove))
+                removedID = key
 
-    if removedID!=None:
-        del clientStates[removedID]
-        del clientConnections[removedID]
+        if removedID!=None:
+            del clientStates[removedID]
+            del clientConnections[removedID]
 
-    print("remaning clientStates: "+str(clientStates))
-    print("remaning clientConnections: "+str(clientStates))
+        print("remaning clientStates: "+str(clientStates))
+        print("remaning clientConnections: "+str(clientStates))
 
     print("notifying other clients of client removal")
     quitEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.PLAYER_QUIT,removedID)
     broadcast(quitEvent, None)
 
 def main():
+    global clientThreads
+    global serverThread
+    global clientThread
+    global runEvent
+
+    print("starting server thread")
+    newServerThread = threading.Thread(target=serverThread,
+        args=(None,None, runEvent)
+    )
+    newServerThread.start()
+
     while True:
-        global clientThreads
-        global clientThread
-        global runEvent
+
         """Accepts a connection request and stores two parameters,
         conn which is a socket object for that user, and addr
         which contains the IP address of the client that just
@@ -301,8 +337,14 @@ def main():
             newClientThread = threading.Thread(target=clientThread,
                 args=(conn,addr,runEvent)
             )
+
+            print("new client thread started")
             newClientThread.start()
-            clientThreads.append(newClientThread)
+            #print("lock6 waiting...")
+            with lock:
+                #print("lock6")
+                clientThreads.append(newClientThread)
+                #print("lock6 unlock")
             print("client thread started")
         except KeyboardInterrupt:
             server.close()
@@ -312,6 +354,7 @@ def main():
                 print("cleaning thread "+str(clientThread))
                 if(clientThread!=None):
                     clientThread.join()
+            newServerThread.join()
             print("successfully joined client threads")
 
             break
@@ -322,3 +365,6 @@ def main():
 
 if __name__=='__main__':
     main()
+
+
+#WE NEED TO ONLY SEND CLIENT STATES TO CLIENTS WHO HAVE RECENTLY SENT US A MESSAGE (FOR CLIENTS WITH LOW FPS)
