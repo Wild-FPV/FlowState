@@ -148,6 +148,7 @@ def clientThread(conn, addr,runEvent):
 
                     # a player is senting an event
                     if messageType == FSNObjects.PLAYER_EVENT:
+                        print("handling player event: "+str(frame))
                         connectionOpen = handlePlayerEvent(frame,conn)
                         if(connectionOpen == False):
                             break
@@ -182,11 +183,10 @@ def handlePlayerState(frame,conn):
 def handlePlayerEvent(frame,conn):
     print("handlePlayerEvent")
     message = FSNObjects.PlayerEvent.getMessage(frame)
-
+    broadcast(message,conn)
     #a new player is joining the game
     if(message.eventType==FSNObjects.PlayerEvent.PLAYER_JOINED):
         print("- player joined")
-        broadcast(message,conn)
         #print("lock2 waiting...")
         with lock:
             #print("lock2 aquired")
@@ -219,21 +219,19 @@ def handlePlayerEvent(frame,conn):
     #A player has just quit the game
     if(message.eventType==FSNObjects.PlayerEvent.PLAYER_QUIT):
         print("- player quit: "+str(message.senderID))
-        broadcast(message,conn)
         connectionOpen = False
         return False
 
     #A player event has occured
     if(message.eventType==FSNObjects.PlayerEvent.PLAYER_MESSAGE):
         print("- player sent game message :"+str(message.extra))
-        broadcast(message,conn)
         send(message, conn)
 
     #A player reset event has occured
     if(message.eventType==FSNObjects.PlayerEvent.PLAYER_RESET):
         print("- player sent game reset message :"+str(message.extra))
-        broadcast(message,conn)
         send(message, conn)
+
     return True
 
 """Using the below function, we broadcast the message to all
