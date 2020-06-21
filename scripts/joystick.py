@@ -95,11 +95,16 @@ def initAllThings():
     logic.finishedLastLap = False
     logic.flowState.setNotification({'Text':""})
     #own['rxPosition'] = [-2279.73,-30.8,90]
-    try:
-        del game['shaderInit']
-    except:
-        pass
-
+    #try:
+    #    del game['shaderInit']
+    #except:
+    #    pass
+    graphicsSettings = flowState.getGraphicsSettings()
+    shaders = graphicsSettings.shaders
+    if shaders:
+        logic.player['camera'].lens= 5.823523998260498
+    else:
+        logic.player['camera'].lens= 10
     flowState.debug("init")
 
 def respawn():
@@ -537,6 +542,22 @@ def main():
 
             if flowState.getRaceState().raceStartTime < time.time(): #player shouldn't be able to take off if the race hasn't started
                 own.applyForce([0,0,thrust],True)
+            else:
+                launchBoundry = 2
+                maxX = own['launchPosition'][0]+(launchBoundry/2)
+                minX = own['launchPosition'][0]-(launchBoundry/2)
+                maxY = own['launchPosition'][1]+(launchBoundry/2)
+                minY = own['launchPosition'][1]-(launchBoundry/2)
+                if(own.position[0]>maxX):
+                    own.position[0] = maxX
+                if(own.position[0]<minX):
+                    own.position[0] = minX
+                if(own.position[1]>maxY):
+                    own.position[1] = maxY
+                if(own.position[1]<minY):
+                    own.position[1] = minY
+                v = own.getLinearVelocity()
+                own.setLinearVelocity([0,v[1],v[2]],True)
 
             if(droneSettings.autoLevel):
                 maxAngle = 100
@@ -565,10 +586,11 @@ def main():
             flowState.log("resetting single player game")
             resetGame()
         if(flowState.getGameMode()==flowState.GAME_MODE_MULTIPLAYER):
-            flowState.log("sending reset message")
-            #resetEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.PLAYER_MESSAGE,flowState.getNetworkClient().clientID,{"reset":time.time()+10})
-            resetEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.PLAYER_RESET,flowState.getNetworkClient().clientID,{"reset":time.time()+10})
-            flowState.getNetworkClient().sendEvent(resetEvent)
+            flowState.log("reset")
+            respawn()
+            #resetEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.PLAYER_RESET,flowState.getNetworkClient().clientID,{"reset":time.time()+10})
+            #flowState.getNetworkClient().sendEvent(resetEvent)
+            #resetGame()
             own['canReset'] = False
         if(flowState.getGameMode()==flowState.GAME_MODE_TEAM_RACE):
             flowState.log("resetting team race")

@@ -9,6 +9,8 @@ import FSNObjects
 import traceback
 from uuid import getnode as get_mac
 
+UPDATE_FRAMERATE = 120
+
 class FSNClient:
     def __init__(self, address, port):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -106,7 +108,7 @@ class FSNClient:
                 print("server unresponsive!")
             #if(self.serverReady):# or (time.time()-self.lastSentTime>1.0): #If we got a heartbeat, or if one second has passed
             if(self.serverReady):
-                if (time.time()-self.lastSentTime>0.025):
+                if (time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE):
                     self.lastSentTime = time.time()
 
                     messageOut = str(self.state).encode("utf-8")

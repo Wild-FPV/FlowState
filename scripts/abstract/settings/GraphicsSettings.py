@@ -55,7 +55,7 @@ class GraphicsSettings:
         self.advancedGrass = advancedGrass
         render.showFramerate(advancedGrass)
 
-    def getShaders(self,shaders):
+    def getShaders(self):
         return self.shaders
 
     def setShaders(self,shaders):

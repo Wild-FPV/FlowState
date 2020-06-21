@@ -29,6 +29,18 @@ def handleUserInputs(keyboard):
 
     if(debugKeyState):
         flowState.getRFEnvironment().printRFState()
+        #toggle spectating
+        flowState.getRFEnvironment().getReceiver().setSpectating(not flowState.getRFEnvironment().getReceiver().isSpectating())
+
+    if(flowState.getRFEnvironment().getReceiver().isSpectating()):
+        logic.sendMessage("disable shaders")
+        print("disable shaders")
+    else:
+        print("we aren't spectating")
+        if(flowState.getGraphicsSettings().getShaders()):
+            logic.sendMessage("enable shaders")
+            print("enable shaders")
+
 
     if(pressedKeys!=[]):
         flowState.log("player is changing channel")

@@ -108,6 +108,7 @@ venv.bak/
 *.exe
 *.dll
 *.lnk
+/FlowState
 
 #mac build
 *.app

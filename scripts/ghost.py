@@ -2,17 +2,22 @@ import bge.logic as logic
 import time
 import math
 import FSNObjects
+import copy
 from scripts.abstract.RaceState import RaceState
 scene = logic.getCurrentScene()
 owner = logic.getCurrentController().owner
 #logic.globalDict["playerQuad"] = owner
 flowState = logic.flowState
 def main():
-    startTime = time.perf_counter()
-    if "lastGhostUpdate" not in owner:
-        owner["lastGhostUpdate"] = time.perf_counter()
-    if abs(time.perf_counter()-owner["lastGhostUpdate"]) > (1/60.0):
-        owner["lastGhostUpdate"] = time.perf_counter()
+    try:
+        logic.lastGhostUpdate
+    except:
+        logic.lastGhostUpdate = time.time()
+        print("FOOOO BAR!")
+
+    if abs(time.time()-logic.lastGhostUpdate) >= (1.0/120):
+    #if True:
+        logic.lastGhostUpdate = time.time()
         if(flowState.getGameMode()==flowState.GAME_MODE_SINGLE_PLAYER):
             lap = logic.flowState.getRaceState().getChannelLapCount(5658)
             if lap < 0:
@@ -33,7 +38,6 @@ def main():
                             lastGhost["obj"]["spectatorCamera"]["cameraName"] = "ghostSpectate"+str(lap)
                         if(lastGhost["obj"]["fpvCamera"]["cameraName"] == "ghost0"):
                             lastGhost["obj"]["fpvCamera"]["cameraName"] = "ghostFPV"+str(lap)
-        endTime = time.perf_counter()
         #print("main("+str(endTime-startTime))
 def getFrameData(obj,ghostObject):
     digits = 3
@@ -55,25 +59,20 @@ def getFrameData(obj,ghostObject):
     avx = round(obj.localAngularVelocity[0],digits)
     avy = round(obj.localAngularVelocity[1],digits)
     avz = round(obj.localAngularVelocity[2],digits)
-    result = {"time":time.perf_counter(),"pos":[px,py,pz],"ori":[[xa,xb,xc],[ya,yb,yc],[za,zb,zc]],"linVel":[lvx,lvy,lvz],"angVel":[avx,avy,avz]}
+    result = {"time":time.time(),"pos":[px,py,pz],"ori":[[xa,xb,xc],[ya,yb,yc],[za,zb,zc]],"linVel":[lvx,lvy,lvz],"angVel":[avx,avy,avz]}
     return result
 
 def createGhostData(obj,ghostObject):
-    startTime = time.perf_counter()
     result =result = {"obj":ghostObject,"currentFrame":0,"frames":[getFrameData(obj,ghostObject)],"spawnComplete":False}
-    endTime = time.perf_counter()
     return result
 
 def recordGhostData(obj, currentGhost):
     if(not logic.finishedLastLap):
-        startTime = time.perf_counter()
 
         currentGhost["frames"].append(getFrameData(obj,currentGhost))
-        endTime = time.perf_counter()
         #print("recordGhostData("+str(endTime-startTime))
 
 def setGhostData(ghost):
-    startTime = time.perf_counter()
     frame = ghost["currentFrame"]
     ghost["currentFrame"] += 1
     try:
@@ -106,7 +105,6 @@ def setGhostData(ghost):
     #    ghost["obj"]["camera"]
     #    #logic.sendMessage("disable shaders")
     #    #ghost["obj"].position = [0,0,-100000]
-    endTime = time.perf_counter()
     #print("createGhostData("+str(endTime-startTime))
 
 def countLap(ghost):
@@ -124,32 +122,26 @@ def countLap(ghost):
 def addGhostQuad():
     actuator = owner.actuators["addGhost"]
     actuator.object = "ghostQuad"
-    startTime = time.perf_counter()
     actuator.instantAddObject()
-    endTime = time.perf_counter()
     obj = actuator.objectLastCreated
     disableGhostCollision(obj)
     obj.position = [0,0,-100000]
     return obj
 
 def disableGhostCollision(obj):
-    startTime = time.perf_counter()
     obj.collisionGroup = 4
     for child in obj.children:
         child.collisionGroup = 4
         for childOfChild in child.children:
             childOfChild.collisionGroup = 4
-    endTime = time.perf_counter()
     #print("disableGhostCollision("+str(endTime-startTime))
 
 def enableGhostCollision(obj):
-    startTime = time.perf_counter()
     obj.collisionGroup = 1
     for child in obj.children:
         child.collisionGroup = 1
         for childOfChild in child.children:
             childOfChild.collisionGroup = 1
-    endTime = time.perf_counter()
     #print("enableGhostCollision("+str(endTime-startTime))
 
 main()
