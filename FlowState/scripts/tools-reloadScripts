@@ -1,0 +1,30 @@
+import bpy
+
+# https://blenderartists.org/forum/showthread.php209369-Synchronizing-text-with-changes-from-outside
+
+def execute():
+    """ Check modified external scripts in the scene and update if possible
+    """
+    ctx = bpy.context.copy()
+    #Ensure  context area is not None
+    ctx['area'] = ctx['screen'].areas[0]
+    
+    #let's find the text editor area. Otherwise it's been set above to the info area
+    for area in ctx['screen'].areas:
+        if(area.type == "TEXT_EDITOR"):
+            ctx['area'] = area
+            
+    for t in bpy.data.texts: #for each script we'd like to update...
+        try:
+            if t.is_modified and not t.is_in_memory: #if the script needs to be synced
+                
+                # Change current context to contain a TEXT_EDITOR
+                ctx['edit_text'] = t #switch the text edit window to the script we'd like to update
+                bpy.ops.text.resolve_conflict(ctx, resolution='RELOAD') #reload the script
+                print("Success: "+str(t.name)+ " updated")
+            else:
+                print("No action: "+str(t.name)+" is already up to date")
+        except Exception as e:
+            print("Error: "+str(str(t.name))+" failed to update. It may be linked from an external blend! Make sure you sync it in that blend")
+
+execute()

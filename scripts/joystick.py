@@ -51,7 +51,7 @@ def setupLaunchPads():
 
     #set all the track launch pads to be video receivers. we may create a dedicated ground station object for this in the future
     for i in range(0,len(flowState.getRFEnvironment().getReceivers())):
-        flowState.log("setting channel for vtx "+str(i))
+        flowState.log("setting channel for vrx "+str(i))
         if(i==8):
             break
         receiver = flowState.getRFEnvironment().getReceivers()[i]
@@ -83,6 +83,9 @@ def initAllThings():
     flowState.debug("SETTLE TIME IS "+str(own['settleStartTime']))
     own['settleDuration'] = 0
     own['settleFrameRates'] = []
+    logic.player['camera']['vtx'].setChannel(flowState.getInitialVTXChannel())
+    logic.player['camera']['vtx'].setPilotTag(flowState.getPlayerName())
+    flowState.getRFEnvironment().getCurrentVRX().setChannel(flowState.getInitialVTXChannel())
     respawn()
     flowState.resetRaceState()
     own['rxPosition'] = copy.deepcopy(logic.flowState.trackState.launchPads[0].position) #needs to be removed now that we have RFEnvironment
@@ -137,13 +140,18 @@ def respawn():
     except Exception as e:
         flowState.error(e)
 
-    launchPos = copy.deepcopy(logic.flowState.trackState.launchPads[launchPadNo].position)
-    launchOri = copy.deepcopy(logic.flowState.trackState.launchPads[launchPadNo].orientation)
-    own['launchPosition'] = [launchPos[0],launchPos[1],launchPos[2]+1]
-    own.position = own['launchPosition']
-    own.orientation = launchOri
-    flowState.debug(logic.flowState.trackState.launchPads)
-    flowState.debug("SPAWNING!!!"+str(launchPadNo)+", "+str(launchPos))
+    try:
+        launchPos = copy.deepcopy(logic.flowState.trackState.launchPads[launchPadNo].position)
+        launchOri = copy.deepcopy(logic.flowState.trackState.launchPads[launchPadNo].orientation)
+        own['launchPosition'] = [launchPos[0],launchPos[1],launchPos[2]+1]
+        own.position = own['launchPosition']
+        own.orientation = launchOri
+        flowState.debug(logic.flowState.trackState.launchPads)
+        flowState.debug("SPAWNING!!!"+str(launchPadNo)+", "+str(launchPos))
+    except:
+        own['launchPosition'] = [0,0,0]
+        own.position = [0,0,0]
+        print("we don't have launch pads yet")
 
 def resetGame():
     scene.active_camera = camera
@@ -548,6 +556,7 @@ def main():
                 minX = own['launchPosition'][0]-(launchBoundry/2)
                 maxY = own['launchPosition'][1]+(launchBoundry/2)
                 minY = own['launchPosition'][1]-(launchBoundry/2)
+                minZ = own['launchPosition'][2]-0.5
                 if(own.position[0]>maxX):
                     own.position[0] = maxX
                 if(own.position[0]<minX):
@@ -556,6 +565,8 @@ def main():
                     own.position[1] = maxY
                 if(own.position[1]<minY):
                     own.position[1] = minY
+                if(own.position[2]<minZ):
+                    own.position[2] = minZ
                 v = own.getLinearVelocity()
                 own.setLinearVelocity([0,v[1],v[2]],True)
 
@@ -610,9 +621,9 @@ def settle():
     own['settled'] = True
     logic.isSettled = True
     flowState.log("SETTLING!!!!!!!")
-def isSettled():
+def isSettled(): #TO-DO get rid of all the settingling logic. The launch pads should be more stable now
     if not own['settled']:
-        logic.setTimeScale(0.001)
+        #logic.setTimeScale(0.001)
         if(flowState.getGameMode()==flowState.GAME_MODE_SINGLE_PLAYER):
             logic.isSettled = False
             fps = logic.getAverageFrameRate()

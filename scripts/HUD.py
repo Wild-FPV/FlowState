@@ -51,12 +51,13 @@ def formatLapTime(lapTime):
         pass
     return result
 
-lapsStr = str(flowState.getRaceState().getChannelLapCount(playerRXFrequency))
+
+pilotTagStr = str(flowState.getRFEnvironment().getCurrentVTX().getPilotTag())
 lastLapStr = formatLapTime(flowState.getRaceState().getChannelLastLapTime(playerRXFrequency))
 bestLapStr = formatLapTime(flowState.getRaceState().getChannelBestLapTime(playerRXFrequency))
 holeshotStr = formatLapTime(flowState.getRaceState().getChannelHoleShot(playerRXFrequency))
 
-laps['Text'] = "LAPS: "+lapsStr
+laps['Text'] = pilotTagStr
 lastLap['Text'] = "LAST LAP: "+lastLapStr
 bestLap['Text'] = "BEST LAP: "+bestLapStr
 holeshot['Text'] = "HOLESHOT: "+holeshotStr

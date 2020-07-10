@@ -89,6 +89,7 @@ def setGhostData(ghost):
             #we don't want a ghost to be on the same video channel as the player
             vtx.setChannel(lap+1)
             vtx.setPitMode(0)
+            vtx.setPilotTag(flowState.getPlayerName())
         else:
             if(frame==1):
                 countLap(ghost)

@@ -20,7 +20,8 @@ class VTX(bge.types.KX_PythonComponent):
     args = OrderedDict([
         ("Power Output (mw)", 25),
         ("Pit Mode",False),
-        ("Frequency", raceband[0])
+        ("Frequency", raceband[0]),
+        ("Pilot Tag", "")
     ])
 
     def start(self, args):
@@ -31,6 +32,7 @@ class VTX(bge.types.KX_PythonComponent):
         self.signalStrength = 0
         self.object['vtx'] = self
         self.spectating = False
+        self.pilotTag = args['Pilot Tag'].upper()
         flowState.addRFEmitter(self)
 
     def getChannel(self):
@@ -54,6 +56,12 @@ class VTX(bge.types.KX_PythonComponent):
         if(self.spectating):
             f = 0
         return f
+
+    def getPilotTag(self):
+        return self.pilotTag
+
+    def setPilotTag(self,newPilotTag):
+        self.pilotTag = newPilotTag.upper()
 
     def setFrequency(self,frequency):
         self.frequency = frequency

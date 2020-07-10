@@ -10,6 +10,7 @@ class RFEnvironment:
         self.emitters = []
         self.receivers = []
         self.currentRXIndex = 0
+        self.currentVTX = None
         self.flowState = flowState
         self.lookVelocity = [0,0]
         self.lookDamp = 0.999
@@ -113,7 +114,8 @@ class RFEnvironment:
                 po = pivot.orientation.to_euler()
                 mousePos = logic.mouse.position
                 grabbing = bge.events.LEFTMOUSE in logic.mouse.active_events
-                self.handleMouseLook(pivot,mapCamera,vtx.object,grabbing)
+                if("UI-pause" not in self.flowState.sceneHistory):
+                    self.handleMouseLook(pivot,mapCamera,vtx.object,grabbing)
                 #(pivotObject,camera,followObj,grabbing)
                 #pivot.orientation = [(mousePos[0]/width)-center[0],0,(mousePos[1]/height)-center[1]]#[v[0],,v[2]]
 
@@ -140,7 +142,7 @@ class RFEnvironment:
                 #quadFPVCameras[3].object.useViewport = True
             else:
                 signalStrength = noiseFloor
-                strongestEmitter = None
+                self.currentVTX = None
                 strongestSignalStrength = 0
                 interference = noiseFloor #we will use this to find out how much of the received signal is intentional or interference
                 for vtx in self.emitters:
@@ -155,7 +157,7 @@ class RFEnvironment:
                         #print("signal strength:"+str(signalStrength)+", disonance: "+str(disonance)+", power: "+str(vtx.power)+", channel: "+str(vtx.channel)+", pit mode: "+str(vtx.pitMode))
                         if(signalStrength>strongestSignalStrength):
                             #let's note the emitter with the strongest signal as well as the value of that siganl strength
-                            strongestEmitter = vtx
+                            self.currentVTX = vtx
                             strongestSignalStrength = signalStrength
                             vtx.signalStrength = signalStrength
 
@@ -172,7 +174,7 @@ class RFEnvironment:
                     pstr+=fr
 
                 #print(pstr)
-                if(strongestEmitter!=None):
+                if(self.currentVTX!=None):
                     interference -= strongestSignalStrength #we don't want to count the current image as interference
                     if(interference<=0):
                         interference = 0.1
@@ -181,7 +183,7 @@ class RFEnvironment:
                     if snr <= 0: #don't let snr = 0
                         snr = 0.1
                     rx.snr = snr
-                    self.setCamera(strongestEmitter.object)
+                    self.setCamera(self.currentVTX.object)
                     render.drawLine(rx.object.position,vtx.object.position,[1,1,1])
                     #self.flowState.log("emitters: "+str(self.emitters))
                 else: #there are no RF emitters
@@ -220,6 +222,9 @@ class RFEnvironment:
         if(self.receivers!=[]):
             vrx = self.receivers[self.currentRXIndex]
         return vrx
+
+    def getCurrentVTX(self):
+        return self.currentVTX
 
     def setCamera(self,newCamera):
         scene = logic.getCurrentScene()

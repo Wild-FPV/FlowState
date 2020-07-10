@@ -9,8 +9,11 @@ from scripts.abstract.RFEnvironment import RFEnvironment
 from scripts.abstract.RaceState import RaceState
 from scripts.abstract.RaceFormat import RaceFormat
 from scripts.abstract.TrackState import TrackState
+from steamworks import STEAMWORKS
 logic = bge.logic
 render = bge.render
+
+DEFAULT_PLAYER_NAME = "unnamed player"
 
 class FlowState:
     #the version of the save data format
@@ -95,7 +98,7 @@ class FlowState:
         self.track = {"launchPads":[], "startFinishPlane":None,"countdownTime":3,"checkpoints":[],"nextCheckpoint":0,"lastCheckpoint":0}
         self.trackState = TrackState(self)
         self._serverIP = "localhost"
-        self._serverPort = 50002
+        self._serverPort = 50001
         self.lastId = 0
 
         self._rfEnvironment = RFEnvironment(self)
@@ -107,6 +110,21 @@ class FlowState:
         formatPriority = self.DEFAULT_RACE_FORMAT_PRIORITY
         self._raceState = RaceState(self,formatPriority,timeLimit=self._timeLimit,lapLimit=self._lapLimit,consecutiveLapCount=self._consecutiveLaps)
         self.shouldReset = False
+        self._defaultPlayerChannel = 0
+
+        try:
+            self.steamworks = STEAMWORKS()
+            self.steamworks.initialize()
+        except Exception as e:
+            self.error("unable to connect to steam. Is it running?")
+            self.steamworks = None
+        self._playerName = self.updatePlayerName()
+        self.log("logged in as "+str(self._playerName))
+
+    def getInitialVTXChannel(self):
+        return self._defaultPlayerChannel
+    def setInitialVTXChannel(self, channel):
+        self._defaultPlayerChannel = channel
 
     #eventually we should implement propper logging
     def debug(self,output):
@@ -264,6 +282,17 @@ class FlowState:
 
     def getPlayer(self):
         return self._player
+
+    def updatePlayerName(self):
+        updatedPlayerName = DEFAULT_PLAYER_NAME
+        if(self.steamworks!=None):
+            updatedPlayerName = self.steamworks.Friends.GetPlayerName().decode('UTF-8')
+        self._playerName = updatedPlayerName
+        return self._playerName
+
+    def getPlayerName(self):
+        return self._playerName
+
 
     def setPlayer(self,player):
         self._player = player

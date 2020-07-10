@@ -9,7 +9,7 @@ import FSNObjects
 import traceback
 from uuid import getnode as get_mac
 
-UPDATE_FRAMERATE = 120
+UPDATE_FRAMERATE = 60
 
 class FSNClient:
     def __init__(self, address, port):
@@ -24,7 +24,7 @@ class FSNClient:
         self.networkReady = False
         self.delim = b'\x1E'
         self.buffer = b''
-        self.state = FSNObjects.PlayerState(None, None, None, None, None, None, None)
+        self.state = FSNObjects.PlayerState(None, None, None, None, None, None, None, None, None, None)
         self.messageHandler = None
         self.serverReady = True
         self.readyToQuit = False
@@ -107,11 +107,10 @@ class FSNClient:
             if(time.time()-self.lastSentTime>10.0):
                 print("server unresponsive!")
             #if(self.serverReady):# or (time.time()-self.lastSentTime>1.0): #If we got a heartbeat, or if one second has passed
-            if(self.serverReady):
-                if (time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE):
-                    self.lastSentTime = time.time()
+            if(self.serverReady and (time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE)) or (time.time()-self.lastSentTime>1):
+                self.lastSentTime = time.time()
 
-                    messageOut = str(self.state).encode("utf-8")
-                    self.sendFrame(messageOut)
-                    self.serverReady = False #this gets set true once we get another ack
+                messageOut = str(self.state).encode("utf-8")
+                self.sendFrame(messageOut)
+                self.serverReady = False #this gets set true once we get another ack
             frame = self.recvFrame() #let's recv and handle anything the server has sent

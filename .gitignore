@@ -107,8 +107,6 @@ venv.bak/
 #windows build
 *.exe
 *.dll
-*.lnk
-/FlowState
 
 #mac build
 *.app
@@ -123,3 +121,8 @@ venv.bak/
 /2.79
 /ghosts
 /Steam Assets
+
+#steam
+steam_appid.txt
+!SteamworksPy.dll
+!steam_api.dll
