@@ -75,7 +75,7 @@ class FlowState:
 
     def __init__(self):
         self.__logFile = os.path.join(str(logic.expandPath("//")),"flowstate.log") #remove once propper logging is implemented
-
+        os.chdir(str(logic.expandPath("//"))) #this is needed so that steamworks can load the DLLs
         self.log("FlowState.init()")
         self._version = self.VERSION
         self._timeLimit = 120

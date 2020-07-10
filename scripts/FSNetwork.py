@@ -90,8 +90,8 @@ def clientMessageHandler(message):
             #print(message)
             if(message.senderID in logic.peers):
                 peerObject = logic.peers[message.senderID]
-                peerObject.position = message.position
-                peerObject.orientation = message.orientation
+                #peerObject.position = message.position
+                #peerObject.orientation = message.orientation
                 #peerObject.setLinearVelocity(message.velocity,True)
                 #peerObject.setAngularVelocity(message.angularVelocity,True)
                 peerObject['state'] = message
@@ -155,10 +155,13 @@ def clientMessageHandler(message):
                 messageBody = startTime
                 MessageTo = None
                 MessageFrom = None
-                flowState._countdownTime = startTime-time.time()
+                flowState._countdownTime = 10+(10-(startTime-time.time()))
+                #flowState._countdownTime = startTime-time.time()
+
                 print("current time is "+str(time.time()))
                 print("message time is "+str(startTime))
                 print("diff - "+str(startTime-time.time()))
+
                 sendMessage(messageSubject,messageBody,MessageTo,MessageFrom)
 
         #server state
@@ -189,7 +192,7 @@ def clientMessageHandler(message):
                     peerState = peerStates[key]
                     message = FSNObjects.PlayerState.getMessage(peerState)
                     peerObject = logic.peers[key]
-                    peerObject.position = message.position
+                    peerObject.position = message.position#interpolate(peerObject.position, message.position,0.9)
                     peerObject.orientation = message.orientation
                     #peerObject.setLinearVelocity(message.velocity,True)
                     #peerObject.setAngularVelocity(message.angularVelocity,True)
@@ -197,7 +200,7 @@ def clientMessageHandler(message):
     else:
         print("WARNING: invalid message!!! "+str(message))
 
-def interpolate(posA,posB,damp):
+def interpolate(posB,posA,damp):
     return [(posA[0]*damp)+(posB[0]*(1-damp)),(posA[1]*damp)+(posB[1]*(1-damp)),(posA[2]*damp)+(posB[2]*(1-damp))]
 
 def rotate2D(point, angle):
@@ -279,18 +282,18 @@ def enterpolatePlayerObjects():
                     damp = 0.75
                     #interpLinearVelocity = interpolate(state.velocity,playerObj.getLinearVelocity(True),0.1)#[(lv[0]*damp)+(olv[0]*(1-damp)),(lv[1]*damp)+(olv[1]*(1-damp)),(lv[2]*damp)+(olv[2]*(1-damp))]
                     #interpAngularVelocity = interpolate(state.angularVelocity,playerObj.getAngularVelocity(True),0.1)#[(av[0]*damp)+(oav[0]*(1-damp)),(av[1]*damp)+(oav[1]*(1-damp)),(av[2]*damp)+(oav[2]*(1-damp))]
-                    interpLinearVelocity = interpolate([0,0,0],state.velocity,0.9)#[(lv[0]*damp)+(olv[0]*(1-damp)),(lv[1]*damp)+(olv[1]*(1-damp)),(lv[2]*damp)+(olv[2]*(1-damp))]
-                    interpAngularVelocity = interpolate([0,0,0],state.angularVelocity,0.9)
-                    interpPosition = interpolate(state.position,playerObj.position,damp)
+                    #interpLinearVelocity = interpolate([0,0,0],state.velocity,0.9)#[(lv[0]*damp)+(olv[0]*(1-damp)),(lv[1]*damp)+(olv[1]*(1-damp)),(lv[2]*damp)+(olv[2]*(1-damp))]
+                    #interpAngularVelocity = interpolate([0,0,0],state.angularVelocity,0.9)
+                    #interpPosition = interpolate(state.position,playerObj.position,damp)
                     #o = playerObj.orientation.to_euler()
                     #orientation = [o[0],o[1],o[2]]
                     #interpOrientation = interpolateOrientation(orientation,state.orientation,0.1,playerObj)
 
-                    playerObj.setLinearVelocity(interpLinearVelocity,True)
-                    playerObj.setAngularVelocity(interpAngularVelocity,True)
-                    #playerObj.position = interpPosition
-                    #playerObj.orientation = interpOrientation
-                    #playerObj.orientation = state.orientation
+                    playerObj.setLinearVelocity(state.velocity,True)
+                    playerObj.setAngularVelocity(state.angularVelocity,True)
+                    #playerObj.position = state.position#interpPosition
+                    playerObj.position = state.position
+                    playerObj.orientation = state.orientation
                     #print(orientation)
                 else:
                     #playerObj.setLinearVelocity(interpLinearVelocity,True)
