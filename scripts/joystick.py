@@ -177,7 +177,7 @@ def getAcc():
         own['acc'] = (abs(own['lastVel']-getArrayProduct(lv)))
         try:
             if own['settled']:
-                elapsedTime = 1/logic.getAverageFrameRate()
+                elapsedTime = frameTime# = float(time.perf_counter())-logic.lastLogicTic
                 force = ((abs(own['lastVel']-getArrayProduct(lv))/elapsedTime)/100)+1
                 #print("force: "+str(force)+"\nelapsedTimie: "+str(elapsedTime))
                 if own['armed']:
@@ -468,34 +468,15 @@ def main():
             fdm = 1 #frontalDragMultiplier
             tdm = 1 #topDragMultiplier
 
-            qd = [0.013014*dm*tdm*sdm,0.0111121*dm*fdm*tdm,0.0071081*dm*tdm] #air drag
-            qd = [tdm,tdm,tdm]
-            #own.setLinearVelocity([lv[0]/(1+qd[0]),lv[1]/(1+qd[1]),lv[2]/(1+qd[2])],True)
-            #own.setLinearVelocity([lv[0]/(1+qd[0]),lv[1]/(1+qd[1]),lv[2]],True)
-            #print(dm)
             st = 1*dm #how quick can the motor/pid orient the quad
             lav = own.getAngularVelocity(True)
-            xav = (((pitchForce)*st)+(lav[0]*(1-st)))+pwrx
-            yav = ((roleForce)*st)+(lav[1]*(1-st))+pwry
+            #xav = (((pitchForce)*st)+(lav[0]*(1-st)))+pwrx
+            #yav = ((roleForce)*st)+(lav[1]*(1-st))+pwry
+            #zav = yawForce+pwrz
+            xav = pitchForce+pwrx
+            yav = roleForce+pwry
             zav = yawForce+pwrz
-            #maxAngularAcceleration = 6
-            #maxAngularAccelerationYaw = 6
-            #xavDiff = pitchForce-lav[0]
-            #yavDiff = roleForce-lav[1]
-            #zavDiff = yawForce-lav[2]
-            #print(str(xavDiff)+":"+str(yavDiff))
-            #if abs(xavDiff) > maxAngularAcceleration:
-            #    sign = ((1 if xavDiff < 0 else 0)-.5)*2
-            #    xav = ((pitchForce+pwrx)*(0.5*dm))+(lav[0]*(1-(0.5*dm)))
-            #    #print("x "+str(xavDiff))
-            #if abs(yavDiff) > maxAngularAcceleration:
-            #    sign = ((1 if yavDiff < 0 else 0)-.5)*2
-            #    yav = ((roleForce+pwry)*(0.5*dm))+(lav[1]*(1-(0.5*dm)))
-            #    #print("y "+str(yavDiff))
-            #if abs(zavDiff) > maxAngularAccelerationYaw:
-            #    sign = ((1 if zavDiff < 0 else 0)-.5)*2
-            #    zav = ((yawForce+pwrz)*(0.5*dm))+(lav[2]*(1-(0.5*dm)))
-            #    #print("z "+str(zavDiff))
+
             own.setAngularVelocity([xav,yav,zav], True)
                 #if av [2] <0:
                     #own.setAngularVelocity([av[0],av[1],0],False)
@@ -544,8 +525,9 @@ def main():
 
             #if(thrust<0):
             #    thrust = 0
-            if 'lastThrust' in own:
-                thrust = (thrust*st)+(own['lastThrust']*(1-st))
+
+            #if 'lastThrust' in own:
+            #    thrust = (thrust*st)+(own['lastThrust']*(1-st))
             own['lastThrust'] = thrust
 
             if flowState.getRaceState().raceStartTime < time.time(): #player shouldn't be able to take off if the race hasn't started
@@ -660,4 +642,5 @@ if (logic.flowState.mapLoadStage == flowState.MAP_LOAD_STAGE_DONE):
             main()
         isSettled()
 if(own.sensors['Message'].positive):
+
     resetGame()

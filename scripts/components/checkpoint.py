@@ -201,6 +201,9 @@ class Checkpoint(bge.types.KX_PythonComponent):
             if(flowState.getPlayer().object.getDistanceTo(self.lastPlayerPos) > 1):
                 self.lastPlayerPos = copy.deepcopy(flowState.getPlayer().object.position)
                 if(nextCheckpoint==hitCheckpointNumber):
-                    self.flightData['position'].append(copy.deepcopy(flowState.getPlayer().object.position))
-                    self.flightData['throttlePercent'].append(logic.throttlePercent)
+                    playerChannel = flowState.getRFEnvironment().getCurrentVRX().getFrequency()
+                    playerFinishedRacing = flowState.getRaceState().channelHasFinished(playerChannel)
+                    if(playerFinishedRacing == False):
+                        self.flightData['position'].append(copy.deepcopy(flowState.getPlayer().object.position))
+                        self.flightData['throttlePercent'].append(logic.throttlePercent)
         self.collision = None

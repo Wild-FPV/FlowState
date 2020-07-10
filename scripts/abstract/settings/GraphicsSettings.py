@@ -82,7 +82,7 @@ class GraphicsSettings:
         self.shading = shading
         render.setGLSLMaterialSetting("lights",shading)
 
-    def getRaceLine(self,raceLine):
+    def getRaceLine(self):
         return self.raceLine
 
     def setRaceLine(self,raceLine):
