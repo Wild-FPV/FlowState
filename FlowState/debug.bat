@@ -1,1 +1,0 @@
-cmd /k game.exe -con

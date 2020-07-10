@@ -105,6 +105,7 @@ venv.bak/
 .mypy_cache/
 
 #windows build
+/FlowState
 *.exe
 *.dll
 
@@ -124,5 +125,5 @@ venv.bak/
 
 #steam
 steam_appid.txt
-!SteamworksPy.dll
-!steam_api.dll
+#!SteamworksPy.dll
+#!steam_api.dll
