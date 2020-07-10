@@ -55,7 +55,7 @@ def handleUserInputs(keyboard):
                         print("setting player vtx "+str(logic.player.name))
                         vtx = logic.player['camera']['vtx']
                         vtx.setFrequency(flowState.getRFEnvironment().getReceiver().getFrequency())
-                        flowState.setInitialVTXChannel(index-1)
+                        flowState.setInitialVTXChannel(index-1) #this prevents us from being reset back to our initial channel when the match resets
                     except Exception as e:
                         print(e)
 

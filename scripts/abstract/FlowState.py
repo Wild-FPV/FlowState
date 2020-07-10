@@ -1,4 +1,4 @@
-import bge
+import bge 
 import copy
 import os
 import traceback

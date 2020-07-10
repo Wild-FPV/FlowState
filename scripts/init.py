@@ -1,6 +1,6 @@
 import bge
-from scripts.abstract.FlowState import FlowState
 print("INIT STARTING!!!")
+from scripts.abstract.FlowState import FlowState
 render = bge.render
 logic = bge.logic
 logic.flowState = FlowState() #let's add our flow state object to the logic controller so we can access it from other scripts
