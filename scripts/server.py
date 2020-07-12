@@ -306,7 +306,7 @@ def handlePlayerEvent(frame,conn):
 clients who's object is not the same as the one sending
 the message """
 def sendAck(socket):
-    ack = FSNObjects.ServerEvent(FSNObjects.ServerEvent.ACK)
+    ack = FSNObjects.ServerEvent(FSNObjects.ServerEvent.ACK,time.time())
     send(ack,socket)
 
 def sendPlayerUpdates():
