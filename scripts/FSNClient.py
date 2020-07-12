@@ -9,9 +9,12 @@ import FSNObjects
 import traceback
 from uuid import getnode as get_mac
 
+UPDATE_FRAMERATE = 60
+
 class FSNClient:
     def __init__(self, address, port):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.server.settimeout(10)
         self.serverIP = address#socket.gethostname()
         self.serverConnected = False
@@ -21,11 +24,13 @@ class FSNClient:
         self.networkReady = False
         self.delim = b'\x1E'
         self.buffer = b''
-        self.state = FSNObjects.PlayerState(None, None, None, None, None, None, None)
+        self.state = FSNObjects.PlayerState(None, None, None, None, None, None, None, None, None, None)
         self.messageHandler = None
         self.serverReady = True
         self.readyToQuit = False
+        self.lastSentTime = time.time()
         self.clientID = str(time.perf_counter())+str(get_mac())
+        self.ping = 0
 
     def connect(self):
         if(not self.serverConnected):
@@ -51,7 +56,6 @@ class FSNClient:
                             print("got invalid frame! "+str(frame))
                             frame = None
                         if(frame!=None):
-                            #print("got message: " + str(frame))
                             if(self.messageHandler!=None):
                                 self.messageHandler(frame)
                             self.buffer = self.buffer[delimIndex+1:-1]
@@ -71,15 +75,18 @@ class FSNClient:
 
         return frame
 
+    def updatePing(self):
+        self.ping = (time.time()-self.lastSentTime)*1000
+
     def sendFrame(self,data):
         data+=self.delim
-        #print("sending frame "+str(data))
         self.server.send(data)
 
     def updateState(self,newState):
         self.state = newState
 
     def sendEvent(self,event):
+        print("sending event: "+str(event))
         self.sendFrame(str(event).encode("utf-8"))
 
     def setMessageHandler(self,method):
@@ -97,7 +104,12 @@ class FSNClient:
 
     def run(self):
         if(self.isConnected()): #the socket is still connected
-            if(self.serverReady): #we have recieved an ack since our last message
+            if(time.time()-self.lastSentTime>10.0):
+                print("server unresponsive!")
+            #if(self.serverReady):# or (time.time()-self.lastSentTime>1.0): #If we got a heartbeat, or if one second has passed
+            if(self.serverReady and (time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE)) or (time.time()-self.lastSentTime>1):
+                self.lastSentTime = time.time()
+
                 messageOut = str(self.state).encode("utf-8")
                 self.sendFrame(messageOut)
                 self.serverReady = False #this gets set true once we get another ack

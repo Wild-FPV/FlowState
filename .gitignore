@@ -105,6 +105,7 @@ venv.bak/
 .mypy_cache/
 
 #windows build
+/FlowState
 *.exe
 *.dll
 
@@ -121,3 +122,8 @@ venv.bak/
 /2.79
 /ghosts
 /Steam Assets
+
+#steam
+steam_appid.txt
+#!SteamworksPy.dll
+#!steam_api.dll

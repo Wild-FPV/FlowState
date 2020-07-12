@@ -15,15 +15,10 @@ if not "shaderInit" in owner:
     print("PLAYER FOUND! SETTING SHADERS!!!!!")
     if hasattr(logic,"player"):
         owner['shaderInit'] = True
-
-        playerCamera = logic.player['camera']
-
         if shaders:
-            playerCamera.lens= 5.823523998260498
             logic.sendMessage("enable shaders")
             print("enabling shaders")
         else:
-            playerCamera.lens = 10
             logic.sendMessage("disable shaders")
             print("disabling shaders")
 

@@ -85,11 +85,11 @@ def spawnRadioInput(label,height,channelKey,invertedKey,action,min,max,increment
     invertedBox = UI.BoxElement(window,[86,height],1,0.5, blockColor, 1)
     invertedLabelText = UI.TextElement(window,[invertedBox.position[0],invertedBox.position[1]], textColor, 0, "INVERTED")
     invertedText = UI.TextElement(window,[invertedBox.position[0]+10,invertedBox.position[1]], textColor, 0, "True")
-    invertedButton = UI.UIButton(invertedText,invertedBox,handleButtonCallback)
+    invertedButton = UI.UIButton(invertedText,invertedBox,handleButtonCallback,invertedKey)
 
     indicatorText = UI.TextElement(window,[50,height], textColor, 0, "0")
     channelInput = UI.UINumberInput(increaseButton,decreaseButton,indicatorText,int(getattr(radioSettings,channelKey)),min,max,increment)
-    invertedBooleanButton = UI.UIBooleanInput(invertedButton,invertedText,invertedKey,bool(getattr(radioSettings,invertedKey)))
+    invertedBooleanButton = UI.UIBooleanInput(invertedButton,invertedText,bool(getattr(radioSettings,invertedKey)))
     return channelInput,invertedBooleanButton
 
 if(owner['init']!=True):

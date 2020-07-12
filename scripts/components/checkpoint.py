@@ -8,6 +8,9 @@ if not hasattr(bge, "__component__"):
     import math as m
     import copy
     import aud
+    from scripts.abstract.RaceState import RaceState
+    import FSNObjects
+
     render = bge.render
     logic = bge.logic
     flowState = logic.flowState
@@ -15,7 +18,8 @@ if not hasattr(bge, "__component__"):
 
 class Checkpoint(bge.types.KX_PythonComponent):
     args = OrderedDict([
-        ("checkpoint number", 1)
+        ("checkpoint number", 1),
+        ("Lap Timer", False)
     ])
 
     def oncollision(self, obj, point, normal, points):
@@ -50,12 +54,46 @@ class Checkpoint(bge.types.KX_PythonComponent):
         self.lastPlayerPos = None
         self.entrance = None
         self.object["checkpoint"] = True
+        self.object['isLapTimer'] = args['Lap Timer']
         self.collision = None
         self.object.collisionCallbacks = [self.oncollision]
         self.flightData = {"position":[],"throttlePercent":[]}
+        self.timeline = {}
 
         #print(self.object.collisionCallbacks)
         #print("start "+str(self.object.name))
+
+    def markLapEvent(self):
+        flowState.debug("markLapEvent()")
+        quadCamera = logic.flowState.getPlayer().object['quadCamera']
+        vtx = quadCamera['vtx']
+        vtxFrequency =vtx.getFrequency()
+        gatePass = {"channel":vtxFrequency, "time":time.time()}
+        clientNetwork = flowState.getNetworkClient()
+        if(clientNetwork == None):
+            clientID = None
+        else:
+            clientID = clientNetwork.clientID
+        if(flowState.getRaceState().holeshotComplete):
+            eventType = FSNObjects.PlayerEvent.EVENT_LAP
+        else:
+            eventType = FSNObjects.PlayerEvent.EVENT_HOLE_SHOT
+        gatePassEvent = FSNObjects.PlayerEvent(eventType,clientID,gatePass)
+        flowState.getRaceState().addTimelineEvent(gatePassEvent)
+
+    def markCheckpointCollectionEvent(self):
+        quadCamera = logic.flowState.getPlayer().object['quadCamera']
+        vtx = quadCamera['vtx']
+        vtxFrequency =vtx.getFrequency()
+        gatePass = {"channel":vtxFrequency, "time":time.time()}
+        clientNetwork = flowState.getNetworkClient()
+        if(clientNetwork == None):
+            clientID = None
+        else:
+            clientID = clientNetwork.clientID
+        gatePassEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.EVENT_CHECKPOINT_COLLECT,clientID,gatePass)
+        flowState.getRaceState().addTimelineEvent(gatePassEvent)
+
 
     def getEntryAngle(self, v1, v2, acute):
         angle = np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
@@ -65,11 +103,11 @@ class Checkpoint(bge.types.KX_PythonComponent):
         if self.object.visible!=enabled:
             self.object.visible = enabled
             if(enabled):
-                print("checkpoint:"+str(self.object['metadata']['checkpoint order'])+" activated")
+                flowState.debug("checkpoint:"+str(self.object['metadata']['checkpoint order'])+" activated")
                 self.enableCollision(self.object)
                 self.flightData = {"position":[],"throttlePercent":[]}
             else:
-                print("checkpoint:"+str(self.object['metadata']['checkpoint order'])+" deactivated")
+                flowState.debug("checkpoint:"+str(self.object['metadata']['checkpoint order'])+" deactivated")
                 self.disableCollision(self.object)
 
     def disableCollision(self,obj):
@@ -81,22 +119,21 @@ class Checkpoint(bge.types.KX_PythonComponent):
         obj.collisionGroup = mask
 
     def playSound(self):
-        print("MAKE SOUND!!! DERP!")
-        sound = aud.Factory.file(bge.logic.expandPath('//sounds/checkpoint.wav'))
-        scene = bge.logic.getCurrentScene()
+        pass
+        #sound = aud.Factory.file(bge.logic.expandPath('//sounds/checkpoint.wav'))
+        #scene = bge.logic.getCurrentScene()
 
-        sound_device = aud.device()
-        sound_device.distance_model = aud.AUD_DISTANCE_MODEL_LINEAR
-        sound_device.listener_location = logic.player.worldPosition
-        sound_device.listener_velocity = logic.player.getLinearVelocity(True)
-        sound_device.volume = 0.5
-        sound_handle = sound_device.play(sound)
-        #sound_handle.volume = 0.5
-        sound_handle.relative = False
-        sound_handle.location = self.object.worldPosition
-        sound_handle.velocity = self.object.getLinearVelocity()
-        sound_handle.distance_maximum = 100
-        sound_handle.distance_reference = 1
+        #sound_device = aud.device()
+        #sound_device.distance_model = aud.AUD_DISTANCE_MODEL_LINEAR
+        #sound_device.listener_location = logic.player.worldPosition
+        #sound_device.listener_velocity = logic.player.getLinearVelocity(True)
+        #sound_device.volume = 0.5
+        #sound_handle = sound_device.play(sound)
+        #sound_handle.relative = False
+        #sound_handle.location = self.object.worldPosition
+        #sound_handle.velocity = self.object.getLinearVelocity()
+        #sound_handle.distance_maximum = 100
+        #sound_handle.distance_reference = 1
 
     def getNormalVect(self, vect):
         max = 0
@@ -108,13 +145,13 @@ class Checkpoint(bge.types.KX_PythonComponent):
             normal.append(vect[i]/max)
         return normal
     def update(self):
-
         self.entrance = self.object.children[0]
-        nextCheckpoint = logic.flowState.track['nextCheckpoint']
+        nextCheckpoint = logic.flowState.getRaceState().getNextCheckpoint()
         hitCheckpointNumber = self.object['metadata']['checkpoint order']
         if(flowState.getGameMode()!=flowState.GAME_MODE_EDITOR):
-
-            if(nextCheckpoint==hitCheckpointNumber):
+            playerChannel = flowState.getRFEnvironment().getCurrentVRX().getFrequency()
+            playerFinishedRacing = flowState.getRaceState().channelHasFinished(playerChannel)
+            if(nextCheckpoint==hitCheckpointNumber) and (playerFinishedRacing is False):
 
                 self.setCheckpointVisibility(True)
                 if self.lastPlayerPos!=None:
@@ -128,9 +165,9 @@ class Checkpoint(bge.types.KX_PythonComponent):
                     self.object['checked'] = True
                     if(hitObject==self.object or ((self.collision!=None) and (self.collision==logic.flowState.getPlayer().object))):
                         if(self.collision!=None):
-                            print("checkpoint:"+str(self.object['metadata']['checkpoint order'])+" collision", self.collision)
+                            flowState.debug("checkpoint:"+str(self.object['metadata']['checkpoint order'])+" collision"+ str(self.collision))
                         else:
-                            print("checkpoint:"+str(self.object['metadata']['checkpoint order'])+" ray hit", hitObject)
+                            flowState.debug("checkpoint:"+str(self.object['metadata']['checkpoint order'])+" ray hit"+ str(hitObject))
 
                         o = self.object.getVectTo(self.entrance.position)[1]
                         #print(o)
@@ -139,16 +176,21 @@ class Checkpoint(bge.types.KX_PythonComponent):
                         difAngle = m.degrees(self.getEntryAngle(v,o,True))
                         if(difAngle>90):
                             self.lastPlayerPos = copy.deepcopy(flowState.getPlayer().object.position)
-                            if logic.flowState.track['lastCheckpoint']==hitCheckpointNumber:
-                                logic.flowState.track['nextCheckpoint'] = 0
-                            else:
-                                logic.flowState.track['nextCheckpoint']+=1
+                            #if logic.flowState.track['lastCheckpoint']==hitCheckpointNumber:
+                            #    logic.flowState.track['nextCheckpoint'] = 1
+                            #else:
+                            #    logic.flowState.track['nextCheckpoint']+=1
+                            flowState.getRaceState().incrementCheckpoint()
                             startTime = time.perf_counter()
                             self.playSound()
                             endTime = time.perf_counter()
-                            print("checkpoint:"+str(hitCheckpointNumber)+" collected")
+                            flowState.debug("checkpoint:"+str(hitCheckpointNumber)+" collected")
+                            self.markCheckpointCollectionEvent()
+                            if('lap timer' in self.object['metadata']):
+                                if(self.object['metadata']['lap timer']):
+                                    self.markLapEvent()
                         else:
-                            print("checkpoint:"+str(hitCheckpointNumber)+" angle ("+str(difAngle)+") exceeds 90 "+str(hitCheckpointNumber))
+                            flowState.debug("checkpoint:"+str(hitCheckpointNumber)+" angle ("+str(difAngle)+") exceeds 90 "+str(hitCheckpointNumber))
                             #print(difAngle)
             else:
                 self.setCheckpointVisibility(False)
@@ -159,6 +201,9 @@ class Checkpoint(bge.types.KX_PythonComponent):
             if(flowState.getPlayer().object.getDistanceTo(self.lastPlayerPos) > 1):
                 self.lastPlayerPos = copy.deepcopy(flowState.getPlayer().object.position)
                 if(nextCheckpoint==hitCheckpointNumber):
-                    self.flightData['position'].append(copy.deepcopy(flowState.getPlayer().object.position))
-                    self.flightData['throttlePercent'].append(logic.throttlePercent)
+                    playerChannel = flowState.getRFEnvironment().getCurrentVRX().getFrequency()
+                    playerFinishedRacing = flowState.getRaceState().channelHasFinished(playerChannel)
+                    if(playerFinishedRacing == False):
+                        self.flightData['position'].append(copy.deepcopy(flowState.getPlayer().object.position))
+                        self.flightData['throttlePercent'].append(logic.throttlePercent)
         self.collision = None

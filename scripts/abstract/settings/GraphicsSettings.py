@@ -55,7 +55,7 @@ class GraphicsSettings:
         self.advancedGrass = advancedGrass
         render.showFramerate(advancedGrass)
 
-    def getShaders(self,shaders):
+    def getShaders(self):
         return self.shaders
 
     def setShaders(self,shaders):
@@ -82,7 +82,7 @@ class GraphicsSettings:
         self.shading = shading
         render.setGLSLMaterialSetting("lights",shading)
 
-    def getRaceLine(self,raceLine):
+    def getRaceLine(self):
         return self.raceLine
 
     def setRaceLine(self,raceLine):

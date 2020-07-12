@@ -1,4 +1,5 @@
 import bge
+import time
 from inspect import signature
 logic = bge.logic
 #flowState = logic.flowState
@@ -9,10 +10,10 @@ flowState = logic.flowState
 TEXT = "UIText"
 INPUT = "UIInput"
 BOX = "UIBox"
-BUTTON = 2
-NUMBER_INPUT = 3
-STICK_DISPLAY = 4
-BOOLEAN_INPUT = 5
+BUTTON = "UIButton"
+NUMBER_INPUT = "UINumberInput"
+STICK_DISPLAY = "UIStickDisplay"
+BOOLEAN_INPUT = "UIBooleanInput"
 LIST = 6
 class UI:
     def __init__(self):
@@ -35,6 +36,7 @@ class UI:
         hitObject = mouseSensor.hitObject
         joystickReady = False
         inputs = logic.mouse.activeInputs
+
         if('JoystickButtons' in cont.sensors):
             joy = cont.sensors['JoystickButtons']
             axis = joy.axisValues
@@ -44,20 +46,25 @@ class UI:
                 joystickReady = True
         if not joystickReady:
             resetSwitch = 0
-
         for key in window.elements:
             element = window.elements[key]
             if(element.disabled==False):
-                if(hitObject == element.owner):
-                    if(element.type == BUTTON):
+                if(element.type == BUTTON):
+                    if(hitObject == element.owner):
                         if (hitObject!=None):
                             element.highlight()
                             for inputKey in inputs:
                                 input = inputs[inputKey]
-                                if(input.released):
-                                    if(input.type == bge.events.LEFTMOUSE):
-                                        #element.owner['action']()
-                                        element.performAction()
+                                UI.handleButtonClick(input, element, hitObject)
+                                #print(input.__dict__.keys())
+#                                if(input.type == bge.events.LEFTMOUSE):
+#                                    if(input.activated):
+#                                        print("ACTIVATED!!!")
+#                                        #element.owner['action']()
+#                                        element.performAction()
+#                                    if(input.released):
+#                                        print("RELEASED!!!")
+#                                        element.performAction()
                             if joystickReady:
                                 if(0 in joy.getButtonActiveList()):
                                     if(joy.triggered):
@@ -73,9 +80,9 @@ class UI:
                                 else:
                                     cont.owner['resetReleased'] = True
 
-                else:
-                    if(element.type == BUTTON):
-                        element.deHighlight()
+                    else:
+                        if(element.type == BUTTON):
+                            element.deHighlight()
 
                 if(element.type == LIST):
                     element.handleInputs()
@@ -85,6 +92,23 @@ class UI:
                     if(wheelUp.positive):
                         element.scrollDown()
                         print("scroll down")
+
+    def handleButtonClick(input, element, hitObject):
+        #this is where we handle clicks and click/holds
+        if(input.type == bge.events.LEFTMOUSE):
+            if(input.activated):
+                element.clickHold = time.time()
+                if 'value' in hitObject and hitObject['value']!=None:
+                    logic.flowState.log(hitObject['value'])
+                element.performAction()
+            if(input.released):
+                element.clickHold = time.time()
+            if(input.active):
+                longClickTime = 0.5
+                clickHoldSpeed = 0.05
+                if(time.time()-element.clickHold>=longClickTime):
+                    element.performAction()
+                    element.clickHold=time.time()-(longClickTime-clickHoldSpeed)
 
     def run(cont): #PLEASE DEPRECATE ME BY ADDING PAGE ELEMENTS TO SCREEN ELEMENTS
         owner = cont.owner
@@ -125,19 +149,11 @@ class UI:
         inputs = logic.mouse.activeInputs
         for inputKey in inputs:
             input = inputs[inputKey]
-
-            if(input.type == bge.events.LEFTMOUSE):
-                if(input.released):
-                    if(hitObject != None):
-                        element = hitObject['UIElement']
-                        if("button" in hitObject.getPropertyNames()):
-                            element = element.button
-                            if 'value' in hitObject and hitObject['value']!=None:
-                                logic.flowState.log(hitObject['value'])
-
-                                element.performAction()
-                            else:
-                                element.performAction()
+            if(hitObject != None):
+                element = hitObject['UIElement']
+                if("button" in hitObject.getPropertyNames()):
+                    element = element.button
+                    UI.handleButtonClick(input, element, hitObject)
         if joystickReady:
             joy = cont.sensors['JoystickButtons']
             if(0 in joy.getButtonActiveList()):
@@ -209,6 +225,7 @@ class UI:
                     vert.color = newColor
 
         def spawnElement(self):
+            flowState.debug("UI.spawnElement("+str(self.type)+")")
             self.owner = scene.addObject(self.type)
             self.updateElementPosition()
             self.setScale()
@@ -247,25 +264,26 @@ class UI:
     class TextElement(UIElement):
         primative = True
         def __init__(self,window,position,color=[255,255,255],depth=0,text="",scale=1,parent=[],children=[]):
+            self.text = text
             self.window = window
             self.owner = None
             self.type = TEXT
             self.color = color
             self.scale = scale
             self.textHang = -0.8
-            self.centerOffset = self.getCenteredTextOffset(text)
+            self.centerOffset = self.getCenteredTextOffset()
             self.position = self.getCenteredTextPosition(position)
             self.depth = depth
             self.width = 0.2
             self.height = 0.2
             self.parent = parent
             self.children = children
-            self.text = text
+
             self.disabled = False
             self.spawnElement()
 
-        def getCenteredTextOffset(self,text):
-            return len(text)*0.6*self.scale
+        def getCenteredTextOffset(self):
+            return len(self.text)*0.6*self.scale
 
         def getCenteredTextPosition(self,position):
             return [position[0]-self.centerOffset,position[1]+self.textHang]
@@ -279,7 +297,7 @@ class UI:
         def setText(self,newText):
             self.text = newText
             self.owner.text = self.text
-            self.getCenteredTextOffset(self.text)
+            self.getCenteredTextOffset()
             self.getCenteredTextPosition(self.position)
 
         def spawnElement(self):
@@ -384,8 +402,8 @@ class UI:
             self.action = action
             self.value = value
             self.key = key
-            self.value = value
             self.disabled = False
+            self.clickHold = time.time()
             self.subscriptions = []
 
         def subscribe(self,method):
@@ -400,6 +418,7 @@ class UI:
             self.box.owner.localScale = [self.box.width,self.box.height,1]
 
         def performAction(self):
+            flowState.debug("UIButton.performAction()")
             sig = signature(self.action)
             params = sig.parameters
             if len(params) == 0:
@@ -489,11 +508,10 @@ class UI:
                 element.box.updateElementPosition()
                 print("moving")
 
-
-
-    class UINumberInput:
+    class UINumberInput():
         primative = False
         def __init__(self,increaseButton,decreaseButton,indicatorText,value=0,min=None,max=None,increments=1):
+            flowState.debug("UIBooleanInput("+str(indicatorText.text)+", "+str(value)+")")
             self.value = value
             self.type = NUMBER_INPUT
             self.min = min
@@ -502,10 +520,6 @@ class UI:
             self.text = indicatorText
             self.increaseButton = increaseButton
             self.decreaseButton = decreaseButton
-            #self.secondaryIncreaseAction = self.increaseButton.getAction()
-            #self.secondaryDecreaseAction = self.decreaseButton.getAction()
-            #self.increaseButton.setAction(self.increaseAction)
-            #self.decreaseButton.setAction(self.decreaseAction)
             self.increaseButton.subscribe(self.increaseAction)
             self.decreaseButton.subscribe(self.decreaseAction)
             self.disabled = False
@@ -529,17 +543,18 @@ class UI:
             self.refreshValue()
             self.decreaseButton.value = self.value
             #self.decreaseButton.performAction()
+            #self.secondaryIncreaseAction(self.decreaseButton.key,self.decreaseButton.value)
 
         def refreshValue(self):
             self.text.owner['Text'] = self.value
 
-    class UIBooleanInput:
+    class UIBooleanInput(UIElement):
         primative = False
-        def __init__(self,button,indicatorText,key,value=False):
+        def __init__(self,button,indicatorText,value=False):
+            flowState.debug("UIBooleanInput("+str(indicatorText.text)+", "+str(value)+")")
             self.value = value
             self.type = BOOLEAN_INPUT
             self.text = indicatorText
-            self.key = key
             self.button = button
             self.secondaryAction = self.button.getAction()
             #self.button.setAction(self.action)
@@ -554,8 +569,7 @@ class UI:
                 self.value = True
             self.refreshValue()
             self.button.value = self.value
-            self.button.key = self.key
-            #self.secondaryAction(self.dictKey,self.value)
+            #self.secondaryAction(self.button.key,self.button.value)
 
         def refreshValue(self):
             self.text.owner['Text'] = str(self.value)

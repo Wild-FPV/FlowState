@@ -24,11 +24,23 @@ def getKeyStates(keyboard):
 
 def handleUserInputs(keyboard):
     (pressedKeys,activeKeys,inactiveKeys,releasedKeys) = getKeyStates(keyboard)
-    channelKeyStates = {1:bge.events.ONEKEY in pressedKeys, 2:bge.events.TWOKEY in pressedKeys, 3:bge.events.THREEKEY in pressedKeys, 4:bge.events.FOURKEY in pressedKeys, 5:bge.events.FIVEKEY in pressedKeys, 6:bge.events.SIXKEY in pressedKeys, 7:bge.events.SEVENKEY in pressedKeys, 8:bge.events.EIGHTKEY in pressedKeys}
+    channelKeyStates = {1:bge.events.ONEKEY in pressedKeys, 2:bge.events.TWOKEY in pressedKeys, 3:bge.events.THREEKEY in pressedKeys, 4:bge.events.FOURKEY in pressedKeys, 5:bge.events.FIVEKEY in pressedKeys, 6:bge.events.SIXKEY in pressedKeys, 7:bge.events.SEVENKEY in pressedKeys, 8:bge.events.EIGHTKEY in pressedKeys, 9:bge.events.NINEKEY in pressedKeys}
     debugKeyState = bge.events.ZEROKEY in pressedKeys
-
+    shiftKeyState = bge.events.LEFTSHIFTKEY in activeKeys
     if(debugKeyState):
         flowState.getRFEnvironment().printRFState()
+        #toggle spectating
+        flowState.getRFEnvironment().getReceiver().setSpectating(not flowState.getRFEnvironment().getReceiver().isSpectating())
+
+    if(flowState.getRFEnvironment().getReceiver().isSpectating()):
+        logic.sendMessage("disable shaders")
+        print("disable shaders")
+    else:
+        print("we aren't spectating")
+        if(flowState.getGraphicsSettings().getShaders()):
+            logic.sendMessage("enable shaders")
+            print("enable shaders")
+
 
     if(pressedKeys!=[]):
         flowState.log("player is changing channel")
@@ -36,11 +48,14 @@ def handleUserInputs(keyboard):
             keyPressed = channelKeyStates[index]
             if(keyPressed):
                 flowState.getRFEnvironment().getReceiver().setChannel(index-1)
-                if(flowState.getGameMode()!=flowState.GAME_MODE_SINGLE_PLAYER):
+                #if(flowState.getGameMode()!=flowState.GAME_MODE_SINGLE_PLAYER):
+                if(shiftKeyState): #shift modifier is happening
+                    print("also setting quad channel")
                     try:
                         print("setting player vtx "+str(logic.player.name))
                         vtx = logic.player['camera']['vtx']
                         vtx.setFrequency(flowState.getRFEnvironment().getReceiver().getFrequency())
+                        flowState.setInitialVTXChannel(index-1)
                     except Exception as e:
                         print(e)
 

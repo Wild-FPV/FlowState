@@ -189,10 +189,8 @@ class MapEditor:
         ray = self.getCameraRay()
         rayPos = ray[1]
         rayNormal = ray[2]
-        flowState.debug(str(rayPos))
         if(rayPos!=None):
             distance = self.camera.getDistanceTo(rayPos)
-            flowState.debug(self.camera.getDistanceTo(rayPos))
             self.cursorOffsetPosition = [0,distance,0]
         else:
             flowState.debug("push failed!")

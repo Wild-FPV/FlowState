@@ -1,5 +1,6 @@
 import bge
 import FSNObjects
+import time
 logic = bge.logic
 flowState = logic.flowState
 render = bge.render
@@ -29,12 +30,12 @@ def handleUserInputs(keyboard):
     if(pressedKeys!=[]):
         print("reset "+str(enter))
         if(enter):
-            if(flowState.getGameMode()==flowState.GAME_MODE_TEAM_RACE):
-                flowState.log("resetting multiplayer game")
-                resetEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.PLAYER_MESSAGE,flowState.getNetworkClient().clientID,"reset")
-                flowState.getNetworkClient().sendEvent(resetEvent)
-                print("sending reset message")
-                owner['canReset'] = False
+            #if(flowState.getGameMode()==flowState.GAME_MODE_TEAM_RACE):
+            flowState.log("resetting multiplayer game")
+            resetEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.PLAYER_RESET,flowState.getNetworkClient().clientID,{"reset":time.time()+10})
+            flowState.getNetworkClient().sendEvent(resetEvent)
+            print("sending reset message")
+            owner['canReset'] = False
 def main():
     keyboard = cont.sensors['gameResetButton']
     handleUserInputs(keyboard)

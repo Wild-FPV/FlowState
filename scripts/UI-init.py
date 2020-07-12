@@ -24,7 +24,6 @@ def proceedAction():
     currentScene = logic.getCurrentScene()
     currentScene.replace("Menu Background")
 
-
 def quitGameAction():
     logic.endGame()
 
@@ -36,7 +35,6 @@ if(owner['init']!=True):
     window = UI.Window()
 
     inset = 0.2
-
 
     if(flowState.isFirstRun()):
         welcomeText = UI.TextElement(window,[50+inset,70], textColor, 0, "Welcome to the Flow State drone racing simulator!")

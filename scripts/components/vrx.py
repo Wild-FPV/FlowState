@@ -8,7 +8,13 @@ raceband = [5658,5695,5732,5769,5806,5843,5880,5917]
 if not hasattr(bge, "__component__"):
     render = bge.render
     logic = bge.logic
-    flowState = logic.flowState
+    try:
+        flowState = logic.flowState
+    except Exception as e:
+        print("VTX: "+str(e))
+        from scripts.abstract.FlowState import FlowState
+        logic.flowState = FlowState()
+        flowState = logic.flowState
 
 class VRX(bge.types.KX_PythonComponent):
     args = OrderedDict([
@@ -21,8 +27,15 @@ class VRX(bge.types.KX_PythonComponent):
         self.interference = 0.0 #how muc of what we received was from interfering emitters
         self.snr = 1 #the signal to noise ratio
         self.object['vrx'] = self
+        self.spectating = False
         flowState.addRFReceiver(self)
         flowState.mapLoadStage = flowState.MAP_LOAD_STAGE_DONE
+
+    def setSpectating(self,spectating):
+        self.spectating = spectating
+
+    def isSpectating(self):
+        return self.spectating
 
     def getFrequency(self):
         return self.frequency

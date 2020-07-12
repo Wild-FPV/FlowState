@@ -55,7 +55,7 @@ def loadMultiplayerServer(serverName):
     #flowState.selectMap("multiplayer.fmp")
     currentScene.replace("Main Game")
     flowState.setServerIP(serverName)
-    flowState.setServerPort(50002)
+    flowState.setServerPort(50001)
 
 def multiplayerAction():
     pass

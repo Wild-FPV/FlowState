@@ -16,10 +16,12 @@ if not hasattr(bge, "__component__"):
     logic = bge.logic
     try:
         flowState = logic.flowState
-    except:
+    except Exception as e:
+        print("FPVModel: "+str(e))
         from scripts.abstract.FlowState import FlowState
         logic.flowState = FlowState()
         flowState = logic.flowState
+
     parts = {}
     parts.update(frameParts)
     parts.update(motorParts)

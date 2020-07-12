@@ -31,10 +31,11 @@ def spawnBoolRow(label,height,key,action):
 
     box = UI.BoxElement(window,[80,height],1,0.5, blockColor, 1)
     text = UI.TextElement(window,[box.position[0],box.position[1]], textColor, 0, "INVERTED")
-    button = UI.UIButton(text,box,settingsAction)
+    button = UI.UIButton(text,box,settingsAction,key)
 
     #indicatorText = UI.TextElement(window,[50,height], textColor, 0, "0")
-    invertedBooleanButton = UI.UIBooleanInput(button,text,key,getattr(graphicsSettings,key))
+    #def __init__(textElement,boxElement,action,key=None,value=None):
+    invertedBooleanButton = UI.UIBooleanInput(button,text,getattr(graphicsSettings,key))
     return invertedBooleanButton
 
 def backAction():

@@ -1,6 +1,7 @@
 import bge
 import math
 import traceback
+import types
 logic = bge.logic
 flowState = logic.flowState
 render = bge.render
@@ -66,6 +67,57 @@ def quitGameAction():
 def resumeAction():
     logic.flowState.getMapEditor().setMode(logic.flowState.VIEW_MODE_PLAY)
 
+def buildBooleanInput(baseId, window, label, value,position, action):
+    flowState.debug("UI-EditorMenu.buildBooleanInput with label "+str(label))
+    height = position[1]
+    width = position[0]
+    pos = [62.5,90.5]
+    #text indicating what the value of the metadata field is
+    indicatorText = UI.TextElement(window,[65+width,height], textColor, 0, str(value))
+
+    #button to decrease the value of the metadata field
+    decreaseBox = UI.BoxElement(window,[55+width,height],0.5,0.5, blockColor, 1)
+    decreaseText = UI.TextElement(window, decreaseBox.position, textColor, value, "/")
+    decreaseButton = UI.UIButton(decreaseText,decreaseBox,action,label)
+
+    #tie the buttons together in order to handle the input
+    UI.UIBooleanInput(decreaseButton,indicatorText,value)
+
+    #add the items to the window to be handled each game frame
+    window.add(label+"ToggleBox",decreaseBox)
+    window.add(label+"ToggleText",decreaseText)
+    window.add(label+"ToggleButton",decreaseButton)
+
+def buildIntegerInput(baseId, window, label, value, position, action, min, max, increment):
+    flowState.debug("UI-EditorMenu.buildIntegerInput with label "+str(label))
+    height = position[1]
+    width = position[0]
+    pos = [62.5,90.5]
+    #text indicating what the value of the metadata field is
+    indicatorText = UI.TextElement(window,[60+width,height], textColor, 0, str(value))
+
+    #button to increase the value of the metadata field
+    increaseBox = UI.BoxElement(window,[67+width,height],0.5,0.5, blockColor, 1)
+    increaseText = UI.TextElement(window,increaseBox.position, textColor, value, "+")
+    increaseButton = UI.UIButton(increaseText,increaseBox,action,label)
+
+    #button to decrease the value of the metadata field
+    decreaseBox = UI.BoxElement(window,[55+width,height],0.5,0.5, blockColor, 1)
+    decreaseText = UI.TextElement(window, decreaseBox.position, textColor, value, "-")
+    decreaseButton = UI.UIButton(decreaseText,decreaseBox,action,label)
+
+    #tie the buttons together in order to handle the input
+    UI.UINumberInput(increaseButton,decreaseButton, indicatorText,value,min,max)
+
+    #add the items to the window to be handled each game frame
+    owner['window'].add(label+"IndicatorText",indicatorText)
+    window.add(baseId+"IncreaseBox",increaseBox)
+    window.add(baseId+"IncreaseText",increaseText)
+    window.add(baseId+"IncreaseButton",increaseButton)
+    window.add(label+"DecreaseBox",decreaseBox)
+    window.add(label+"DecreaseText",decreaseText)
+    window.add(label+"DecreaseButton",decreaseButton)
+
 def spawnMetadataInput(window,label,value,position,action,min,max,increment):
     height = position[1]
     width = position[0]
@@ -73,31 +125,17 @@ def spawnMetadataInput(window,label,value,position,action,min,max,increment):
     rowBox = UI.BoxElement(window,[50+width,height],4,0.5, blockColor, 5)
     titleText = UI.TextElement(window,[40+width,height], textColor, 0, label)
 
+    #create metadata based on its type
+    if type(value) is bool:
+        flowState.debug(str(label)+" IS A BOOL!!!")
+        buildBooleanInput(label, window, label, value, position, action)
+        channelInput = None
+    if type(value) is int:
+        flowState.debug(str(label)+" IS AN INT!!!")
+        buildIntegerInput(label, window, label, value, position, action, min, max, increment)
 
-    increaseBox = UI.BoxElement(window,[67+width,height],0.5,0.5, blockColor, 1)
-    increaseText = UI.TextElement(window,increaseBox.position, textColor, 0, "+")
-    increaseButton = UI.UIButton(increaseText,increaseBox,action,label)
-
-
-    decreaseBox = UI.BoxElement(window,[55+width,height],0.5,0.5, blockColor, 1)
-    decreaseText = UI.TextElement(window, decreaseBox.position, textColor, 0, "-")
-    decreaseButton = UI.UIButton(decreaseText,decreaseBox,action,label)
-    print(action)
-    print("VALUE = "+str(value))
-    indicatorText = UI.TextElement(window,[60+width,height], textColor, 0, str(value))
-    channelInput = UI.UINumberInput(increaseButton,decreaseButton,indicatorText,value,min,max,increment)
-
-    owner['window'].add(label+"RowBox",rowBox)
-    owner['window'].add(label+"TitleText",titleText)
-    owner['window'].add(label+"IncreaseBox",increaseBox)
-    owner['window'].add(label+"IncreaseText",increaseText)
-    owner['window'].add(label+"IncreaseButton",increaseButton)
-    owner['window'].add(label+"DecreaseBox",decreaseBox)
-    owner['window'].add(label+"DecreaseText",decreaseText)
-    owner['window'].add(label+"DecreaseButton",decreaseButton)
-    owner['window'].add(label+"IndicatorText",indicatorText)
-    #owner['window'].add(label+"ChannelInput",channelInput)
-
+    window.add(label+"RowBox",rowBox)
+    window.add(label+"TitleText",titleText)
     return None
 
 if(owner['init']==0):
@@ -173,5 +211,5 @@ if(owner['init']==1):
 
             UI.runWindow(window,cont)
     except Exception as e:
-        flowState.log(traceback.format_exc())
+        flowState.error(traceback.format_exc())
         owner['init'] = -1

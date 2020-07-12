@@ -8,7 +8,8 @@ if not hasattr(bge, "__component__"):
     logic = bge.logic
     try:
         flowState = logic.flowState
-    except:
+    except Exception as e:
+        print("Ground: "+str(e))
         from scripts.abstract.FlowState import FlowState
         logic.flowState = FlowState()
         flowState = logic.flowState

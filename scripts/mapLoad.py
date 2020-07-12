@@ -31,7 +31,7 @@ def spawnMapElements(mapData):
     except:
         owner = logic.getCurrentScene().objects['Game.001']
     #clear any dead checkpoints
-    logic.flowState.track['checkpoints'] = []
+    logic.flowState.trackState.checkpoints = []
 
     for asset in mapData['assets']:
         spawn = object
@@ -64,8 +64,10 @@ def spawnMapElements(mapData):
                 child.endObject()
         if('m' in asset):
             flowState.debug("found metadata for asset: "+str(asset))
+
             m = asset['m']
             newObj['metadata'] = m
+            flowState.debug(newObj['metadata'])
         if('m' not in  asset):
             flowState.debug("found no metadata for asset: "+str(asset))
             flowState.addMetadata(newObj)
@@ -77,22 +79,19 @@ def spawnMapElements(mapData):
             flowState.debug("found no ID in metadata for asset: "+str(asset))
             flowState.addMetadata(newObj)
         #print("loading metadata: "+str(newObj['metadata']))
-        if(asset['n'] == flowState.ASSET_START_FINISH):
-            logic.flowState.track['startFinishPlane'] = newObj
-            flowState.log("added start finish gate")
         if('checkpoint order' in newObj['metadata']):
-            logic.flowState.track['checkpoints'].append(newObj)
-            if newObj['metadata']['checkpoint order'] > logic.flowState.track['lastCheckpoint']:
-                logic.flowState.track['lastCheckpoint'] = newObj['metadata']['checkpoint order']
+            logic.flowState.trackState.checkpoints.append(newObj)
+            if newObj['metadata']['checkpoint order'] > logic.flowState.getRaceState().getLastCheckpoint():
+                logic.flowState.trackState.setLastCheckpoint(newObj['metadata']['checkpoint order'])
 
         if(asset['n'] == "asset launch pad"):
             newSpawnPoint = newObj
-            if logic.flowState.track['launchPads']!=[]:
+            if logic.flowState.trackState.launchPads!=[]:
                 print("adding launch pad "+str(newSpawnPoint.name))
-                logic.flowState.track['launchPads'].append(newSpawnPoint)
+                logic.flowState.trackState.launchPads.append(newSpawnPoint)
             else:
                 print("creating launch pads "+str(newSpawnPoint.name))
-                logic.flowState.track['launchPads'] = [newSpawnPoint]
+                logic.flowState.trackState.launchPads = [newSpawnPoint]
 
-            print(str(logic.flowState.track['launchPads']))
+            print(str(logic.flowState.trackState.launchPads))
     #flowState.mapLoadStage = flowState.MAP_LOAD_STAGE_DONE

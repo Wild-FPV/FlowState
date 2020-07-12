@@ -6,8 +6,14 @@ from scripts.abstract.settings.DroneSettings import DroneSettings
 from scripts.abstract.settings.RadioSettings import RadioSettings
 from scripts.abstract.settings.GraphicsSettings import GraphicsSettings
 from scripts.abstract.RFEnvironment import RFEnvironment
+from scripts.abstract.RaceState import RaceState
+from scripts.abstract.RaceFormat import RaceFormat
+from scripts.abstract.TrackState import TrackState
+from steamworks import STEAMWORKS
 logic = bge.logic
 render = bge.render
+
+DEFAULT_PLAYER_NAME = "unnamed player"
 
 class FlowState:
     #the version of the save data format
@@ -35,12 +41,13 @@ class FlowState:
     ASSET_CHECKPOINT = "asset checkpoint square"
     ASSET_CONCRETE_BLOCK = "asset concrete block"
     ASSET_PINE_TREE_TALL = "asset pine tree 12m"
-    ASSETS = [ASSET_MGP_GATE,ASSET_MGP_GATE_DOUBLE,ASSET_MGP_GATE_LARGE,ASSET_MGP_GATE_HANGING_LARGE,ASSET_MGP_GATE_HIGH_LARGE,ASSET_MGP_GATE_DOUBLE_LARGE,ASSET_MGP_LADDER_LARGE,ASSET_MGP_GATE_ANGLED_DIVE_LARGE,ASSET_MGP_GATE_DIVE_LARGE,ASSET_MGP_HURDLE,ASSET_MGP_HURDLE_LARGE,ASSET_MGP_FLAG,ASSET_MGP_POLE,ASSET_LUMENIER_GATE_LARGE,ASSET_TABLE,ASSET_LAUNCH_PAD,ASSET_CONE,ASSET_CONCRETE_BLOCK,ASSET_PINE_TREE_TALL,ASSET_START_FINISH,ASSET_CHECKPOINT]
+    ASSET_POP_UP_GATE = "asset pop-up gate"
+    ASSETS = [ASSET_MGP_GATE,ASSET_MGP_GATE_DOUBLE,ASSET_MGP_GATE_LARGE,ASSET_MGP_GATE_HANGING_LARGE,ASSET_MGP_GATE_HIGH_LARGE,ASSET_MGP_GATE_DOUBLE_LARGE,ASSET_MGP_LADDER_LARGE,ASSET_MGP_GATE_ANGLED_DIVE_LARGE,ASSET_MGP_GATE_DIVE_LARGE,ASSET_MGP_HURDLE,ASSET_MGP_HURDLE_LARGE,ASSET_MGP_FLAG,ASSET_MGP_POLE,ASSET_LUMENIER_GATE_LARGE,ASSET_TABLE,ASSET_LAUNCH_PAD,ASSET_CONE,ASSET_CONCRETE_BLOCK,ASSET_PINE_TREE_TALL,ASSET_CHECKPOINT]
 
     #asset metadata types
     METADATA_GATE = {"id":-1}
     STATIC_METADATA = ["id"]
-    METADATA_CHECKPOINT = {"id":-1,"checkpoint order":1}
+    METADATA_CHECKPOINT = {"id":-1,"checkpoint order":1,"lap timer":False}
 
     #game modes
     GAME_MODE_EDITOR = 0
@@ -64,14 +71,19 @@ class FlowState:
 
     LOG_LEVEL = LOG_LEVEL_INFO
 
+    DEFAULT_RACE_FORMAT_PRIORITY = [RaceFormat.FORMAT_MOST_LAPS,RaceFormat.FORMAT_FIRST_TO_LAPS,RaceFormat.FORMAT_FASTEST_CONSECUTIVE]
+
     def __init__(self):
         self.__logFile = os.path.join(str(logic.expandPath("//")),"flowstate.log") #remove once propper logging is implemented
-
+        os.chdir(str(logic.expandPath("//"))) #this is needed so that steamworks can load the DLLs
         self.log("FlowState.init()")
         self._version = self.VERSION
         self._timeLimit = 120
+        self._lapLimit = 10
+        self._consecutiveLaps = 3
+        self._countdownTime = 5
         self._checkpoints = []
-        self._selectedMap = "2018 Regional Final.fmp"
+        self._selectedMap = "unspecified map"
         self._player = None #needs to be implemented
         self._HUDController = None #needs to be implemented
         self._gameMode = self.GAME_MODE_SINGLE_PLAYER
@@ -84,8 +96,9 @@ class FlowState:
         self.mapLoadStage = self.MAP_LOAD_STAGE_LOADING
         self.sceneHistory = []
         self.track = {"launchPads":[], "startFinishPlane":None,"countdownTime":3,"checkpoints":[],"nextCheckpoint":0,"lastCheckpoint":0}
+        self.trackState = TrackState(self)
         self._serverIP = "localhost"
-        self._serverPort = 50002
+        self._serverPort = 50001
         self.lastId = 0
 
         self._rfEnvironment = RFEnvironment(self)
@@ -94,6 +107,24 @@ class FlowState:
         self._graphicsSettings = GraphicsSettings(self)
         self._networkClient = None
         self.menuButtonColor = [0.3,0.3,0.3,0.6]
+        formatPriority = self.DEFAULT_RACE_FORMAT_PRIORITY
+        self._raceState = RaceState(self,formatPriority,timeLimit=self._timeLimit,lapLimit=self._lapLimit,consecutiveLapCount=self._consecutiveLaps)
+        self.shouldReset = False
+        self._defaultPlayerChannel = 0
+
+        try:
+            self.steamworks = STEAMWORKS()
+            self.steamworks.initialize()
+        except Exception as e:
+            self.error("unable to connect to steam. Is it running?")
+            self.steamworks = None
+        self._playerName = self.updatePlayerName()
+        self.log("logged in as "+str(self._playerName))
+
+    def getInitialVTXChannel(self):
+        return self._defaultPlayerChannel
+    def setInitialVTXChannel(self, channel):
+        self._defaultPlayerChannel = channel
 
     #eventually we should implement propper logging
     def debug(self,output):
@@ -181,6 +212,16 @@ class FlowState:
         self.sceneHistory = history #we don't typically want the scene history to be reset
         self.loadSaveSettings()
 
+    def getRaceState(self):
+        return self._raceState
+
+    def resetRaceState(self):
+        self.debug("FlowState.resetRaceState()")
+        #formatPriority = self.DEFAULT_RACE_FORMAT_PRIORITY #[RaceFormat.FORMAT_FIRST_TO_LAPS,RaceFormat.FORMAT_FASTEST_CONSECUTIVE,RaceFormat.FORMAT_MOST_LAPS]
+        raceFormat = copy.deepcopy(self._raceState.getRaceFormat())
+        newRaceState = RaceState(self,raceFormat.formatPriority,raceFormat.timeLimit,raceFormat.lapLimit,raceFormat.consecutiveLapCount)
+        self._raceState = newRaceState
+
     def getRFEnvironment(self):
         return self._rfEnvironment
 
@@ -203,7 +244,7 @@ class FlowState:
         self._rfEnvironment = RFEnvironment(self)
 
     def addMetadata(self,asset):
-        self.log("mapEditor.addMetadata("+str(asset)+")")
+        self.log("FlowState.addMetadata("+str(asset)+")")
         asset['metadata'] = {}
         if 'gate' in asset.name:
             asset['metadata'] = copy.deepcopy(self.METADATA_GATE)
@@ -231,11 +272,27 @@ class FlowState:
     def getSelectedMap(self):
         return self._selectedMap
 
+    def getSelectedMapName(self):
+        mapName = self._selectedMap
+        mapName = os.path.splitext(mapName)[0] #get rid of the file type
+        return mapName
+
     def selectMap(self,selectedMap):
         self._selectedMap = selectedMap
 
     def getPlayer(self):
         return self._player
+
+    def updatePlayerName(self):
+        updatedPlayerName = DEFAULT_PLAYER_NAME
+        if(self.steamworks!=None):
+            updatedPlayerName = self.steamworks.Friends.GetPlayerName().decode('UTF-8')
+        self._playerName = updatedPlayerName
+        return self._playerName
+
+    def getPlayerName(self):
+        return self._playerName
+
 
     def setPlayer(self,player):
         self._player = player
