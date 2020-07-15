@@ -27,19 +27,20 @@ def handleUserInputs(keyboard):
     channelKeyStates = {1:bge.events.ONEKEY in pressedKeys, 2:bge.events.TWOKEY in pressedKeys, 3:bge.events.THREEKEY in pressedKeys, 4:bge.events.FOURKEY in pressedKeys, 5:bge.events.FIVEKEY in pressedKeys, 6:bge.events.SIXKEY in pressedKeys, 7:bge.events.SEVENKEY in pressedKeys, 8:bge.events.EIGHTKEY in pressedKeys, 9:bge.events.NINEKEY in pressedKeys}
     debugKeyState = bge.events.ZEROKEY in pressedKeys
     shiftKeyState = bge.events.LEFTSHIFTKEY in activeKeys
+    receiver = flowState.getRFEnvironment().getReceiver()
     if(debugKeyState):
         flowState.getRFEnvironment().printRFState()
         #toggle spectating
         flowState.getRFEnvironment().getReceiver().setSpectating(not flowState.getRFEnvironment().getReceiver().isSpectating())
-
-    if(flowState.getRFEnvironment().getReceiver().isSpectating()):
-        logic.sendMessage("disable shaders")
-        print("disable shaders")
-    else:
-        print("we aren't spectating")
-        if(flowState.getGraphicsSettings().getShaders()):
-            logic.sendMessage("enable shaders")
-            print("enable shaders")
+    if(receiver!=None):
+        if(receiver.isSpectating()):
+            logic.sendMessage("disable shaders")
+            print("disable shaders")
+        else:
+            print("we aren't spectating")
+            if(flowState.getGraphicsSettings().getShaders()):
+                logic.sendMessage("enable shaders")
+                print("enable shaders")
 
 
     if(pressedKeys!=[]):

@@ -7,8 +7,12 @@ cont = logic.getCurrentController()
 own = cont.owner
 flowState = logic.flowState
 
-playerRXFrequency = flowState.getRFEnvironment().getCurrentVRX().getFrequency()
+currentVRX = flowState.getRFEnvironment().getCurrentVRX()
+if(currentVRX!=None):
+    playerRXFrequency = currentVRX.getFrequency()
+else:
 
+    playerRXFrequency = 1
 errorLog = logic.getCurrentScene().objects['HUDError']
 rxChannel = logic.getCurrentScene().objects['HUDRXChannel']
 laps = logic.getCurrentScene().objects['HUDLapCount']
@@ -34,7 +38,8 @@ try:
     vtx = camera['vtx']
     rxChannel['Text'] = "VTX Channel: "+str(vtx.getChannel()+1)+ping
 except Exception as e:
-    flowState.error(e)
+    pass
+    #flowState.error(e)
 graphicsSettings = flowState.getGraphicsSettings()
 aspectRatioIs43 = graphicsSettings.aspectRatioIs4x3()
 if(aspectRatioIs43):
@@ -54,8 +59,10 @@ def formatLapTime(lapTime):
         pass
     return result
 
+pilotTagStr = ""
 
 pilotTagStr = str(flowState.getRFEnvironment().getCurrentVTX().getPilotTag())
+
 lastLapStr = formatLapTime(flowState.getRaceState().getChannelLastLapTime(playerRXFrequency))
 bestLapStr = formatLapTime(flowState.getRaceState().getChannelBestLapTime(playerRXFrequency))
 holeshotStr = formatLapTime(flowState.getRaceState().getChannelHoleShot(playerRXFrequency))
@@ -64,7 +71,7 @@ laps['Text'] = pilotTagStr
 lastLap['Text'] = "LAST LAP: "+lastLapStr
 bestLap['Text'] = "BEST LAP: "+bestLapStr
 holeshot['Text'] = "HOLESHOT: "+holeshotStr
-errorLog['Text'] = "Error: "+logic.errorLog
+#errorLog['Text'] = "Error: "+logic.errorLog
 
 #flowState.debug("currentCheckpoint = "+str(flowState.getRaceState().currentCheckpoint))
 #flowState.debug("lastCheckpoint = "+str(flowState.track.getLastCheckpoint()))
@@ -92,7 +99,10 @@ raceCompletionText += "\n"
 timeCompletedText = flowState.getRaceState().getChannelRaceCompletionTime(playerRXFrequency)
 raceCompletionText += "time: "+formatLapTime(timeCompletedText)
 raceCompletionText += "\n"
-raceCompletionText += "Rank: "+str(flowState.getRaceState().getPlayerRanks().index(playerRXFrequency)+1)
+try:
+    raceCompletionText += "Rank: "+str(flowState.getRaceState().getPlayerRanks().index(playerRXFrequency)+1)
+except:
+    pass
 
 flowState.setNotification({"Text":raceCompletionText})
 logic.flowState.track['nextCheckpoint'] = -1

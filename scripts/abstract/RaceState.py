@@ -85,42 +85,50 @@ class RaceState:
         return lastLap
 
     def getChannelTimeOfLastLap(self,channel):
-        timeline = self.channelTimelines[channel]
-        timeOfLastLap = None
-        for key in timeline:
-            timerEvent = timeline[key]
-            if(timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_LAP) or (timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_HOLE_SHOT) or (timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_RACE_FINISH):
-
-                if(timeOfLastLap==None) or (timerEvent.extra['time']>timeOfLastLap):
-                    timeOfLastLap = timerEvent.extra['time']
-        if(timeOfLastLap==None): #if the player didn't get any laps, consider the last lap ended at the tone
+        if(channel not in self.channelTimelines):
             return self.raceStartTime+self.raceFormat.timeLimit
         else:
-            return timeOfLastLap
+            timeline = self.channelTimelines[channel]
+            timeOfLastLap = None
+            for key in timeline:
+                timerEvent = timeline[key]
+                if(timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_LAP) or (timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_HOLE_SHOT) or (timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_RACE_FINISH):
+
+                    if(timeOfLastLap==None) or (timerEvent.extra['time']>timeOfLastLap):
+                        timeOfLastLap = timerEvent.extra['time']
+            if(timeOfLastLap==None): #if the player didn't get any laps, consider the last lap ended at the tone
+                return self.raceStartTime+self.raceFormat.timeLimit
+            else:
+                return timeOfLastLap
 
     def getChannelRaceCompletionTime(self,channel):
-        return self.getChannelTimeOfLastLap(channel)-(self.raceStartTime)
+        timeOfLastLap = self.getChannelTimeOfLastLap(channel)
+        timeOfRaceStart = self.raceStartTime
+        return timeOfLastLap-timeOfRaceStart
 
     def getChannelLapTimes(self,channel):
         gatePassTimes = []
         lapTimes = []
-        timeline = self.channelTimelines[channel]
-        #create a list of lap pass times
-        for key in timeline:
-            timerEvent = timeline[key]
-            if(timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_LAP) or (timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_HOLE_SHOT) or (timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_RACE_FINISH):
-                gatePassTimes.append(timerEvent.extra['time'])
-
-        if(len(gatePassTimes) >= 2): #if there aren't more than two passes, we don't yet have a completed lap
-            #create a list of lap times based on the times the laps occured
-            for i in range(0,len(gatePassTimes)-1):
-                lapStartTime = gatePassTimes[i]
-                lapEndTime = gatePassTimes[i+1]
-                duration = lapEndTime-lapStartTime
-                lapTimes.append(duration)
-            return lapTimes
-        else:
+        if(channel not in self.channelTimelines):
             return []
+        else:
+            timeline = self.channelTimelines[channel]
+            #create a list of lap pass times
+            for key in timeline:
+                timerEvent = timeline[key]
+                if(timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_LAP) or (timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_HOLE_SHOT) or (timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_RACE_FINISH):
+                    gatePassTimes.append(timerEvent.extra['time'])
+
+            if(len(gatePassTimes) >= 2): #if there aren't more than two passes, we don't yet have a completed lap
+                #create a list of lap times based on the times the laps occured
+                for i in range(0,len(gatePassTimes)-1):
+                    lapStartTime = gatePassTimes[i]
+                    lapEndTime = gatePassTimes[i+1]
+                    duration = lapEndTime-lapStartTime
+                    lapTimes.append(duration)
+                return lapTimes
+            else:
+                return []
 
     def getChannelBestLapTime(self,channel):
         lapTimes = self.getChannelLapTimes(channel)
@@ -130,44 +138,50 @@ class RaceState:
             return min(lapTimes)
 
     def getChannelHoleShot(self,channel):
-        timeline = self.channelTimelines[channel]
-        holeShotTime = None
-        for key in timeline:
-            timerEvent = timeline[key]
-            if(timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_HOLE_SHOT):
-                holeShotTime = timerEvent.extra['time']-self.raceStartTime
-                break
-        return holeShotTime
+        if(channel not in self.channelTimelines):
+            return None
+        else:
+            timeline = self.channelTimelines[channel]
+            holeShotTime = None
+            for key in timeline:
+                timerEvent = timeline[key]
+                if(timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_HOLE_SHOT):
+                    holeShotTime = timerEvent.extra['time']-self.raceStartTime
+                    break
+            return holeShotTime
 
     def getChannelFastestConcecutiveTime(self,channel,x):
-        timeline = self.channelTimelines[channel]
-        lapPasses = []
-        lapDurations = []
-        xConsecutiveTimes = []
-
-        #create a list of lap pass times
-        for key in timeline:
-            timerEvent = timeline[key]
-            if(timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_LAP) or (timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_HOLE_SHOT) or (timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_RACE_FINISH):
-                lapPasses.append(timerEvent.extra['time'])
-
-        #we need to handle when the players hasn't completed enough laps to qualify in the format
-        if(len(lapPasses)>x):
-            #create a list of lap durations based on the times the laps occured
-            for i in range(0,len(lapPasses)-1):
-                lapStartTime = lapPasses[i]
-                lapEndTime = lapPasses[i+1]
-                duration = lapEndTime-lapStartTime
-                lapDurations.append(duration)
-            #create a list of x consecutive times
-            for i in range(0,len(lapDurations)-x+1):
-                currentConsecutiveDuration = 0
-                for j in range(0,x):
-                    currentConsecutiveDuration += lapDurations[j+i]
-                xConsecutiveTimes.append(currentConsecutiveDuration)
-            return min(xConsecutiveTimes) #out of all the consecutive lap times, return the lowest one
-        else:
+        if(channel not in self.channelTimelines):
             return None
+        else:
+            timeline = self.channelTimelines[channel]
+            lapPasses = []
+            lapDurations = []
+            xConsecutiveTimes = []
+
+            #create a list of lap pass times
+            for key in timeline:
+                timerEvent = timeline[key]
+                if(timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_LAP) or (timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_HOLE_SHOT) or (timerEvent.eventType==FSNObjects.PlayerEvent.EVENT_RACE_FINISH):
+                    lapPasses.append(timerEvent.extra['time'])
+
+            #we need to handle when the players hasn't completed enough laps to qualify in the format
+            if(len(lapPasses)>x):
+                #create a list of lap durations based on the times the laps occured
+                for i in range(0,len(lapPasses)-1):
+                    lapStartTime = lapPasses[i]
+                    lapEndTime = lapPasses[i+1]
+                    duration = lapEndTime-lapStartTime
+                    lapDurations.append(duration)
+                #create a list of x consecutive times
+                for i in range(0,len(lapDurations)-x+1):
+                    currentConsecutiveDuration = 0
+                    for j in range(0,x):
+                        currentConsecutiveDuration += lapDurations[j+i]
+                    xConsecutiveTimes.append(currentConsecutiveDuration)
+                return min(xConsecutiveTimes) #out of all the consecutive lap times, return the lowest one
+            else:
+                return None
 
     def getChannelLapCount(self,channel):
         laps = self.getChannelLapTimes(channel)

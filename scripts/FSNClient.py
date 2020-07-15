@@ -45,36 +45,43 @@ class FSNClient:
         frame = None
         read_sockets,write_socket, error_socket = select.select([self.server],[],[],0.0)
         for socks in read_sockets:
-            while True:
-                try:
-                    newData = socks.recv(1)
-                    self.buffer+=newData
-                    if self.delim in self.buffer:
-                        delimIndex = self.buffer.find(self.delim)
-                        frame = self.buffer[:delimIndex]
-                        try:
-                            frame = ast.literal_eval(frame.decode("utf-8"))
-                        except:
-                            flowState.log("got invalid frame! "+str(frame))
-                            frame = None
-                        if(frame!=None):
-                            if(self.messageHandler!=None):
-                                self.messageHandler(frame)
-                            self.buffer = self.buffer[delimIndex+1:-1]
-                        else:
-                            self.buffer = b''
-                        break
-
-                    if len(self.buffer) > 655360:
-                        flowState.log("message too long! Disregarding")
+            try:
+                print("reading socket data")
+                self.buffer += socks.recv(2048)
+                print("buffer: "+str(len(self.buffer)))
+                for i in range(0,100):
+                    if(len(self.buffer)>655360): #avoid getting spammed by large, bogus messages
+                        print("message too long! Disregarding")
                         self.buffer = b''
                         break
-                except Exception as e:
-                    print(traceback.format_exc())
-                    print("server unresponsive")
-                    self.quit()
-                    break
+                    if(len(self.buffer)>0):
+                        delimIndex = self.buffer.find(self.delim)
+                        #if delim in buffer:
+                        if(delimIndex!=-1):
+                            frame = self.buffer[:delimIndex]
+                            self.buffer = self.buffer[delimIndex+1:]
+                            try:
+                                frame = ast.literal_eval(frame.decode("utf-8"))
+                                print("got valid frame: "+str(frame))
+                                if(self.messageHandler!=None):
+                                    if(frame!=None):
+                                        print("handling frame")
+                                        self.messageHandler(frame)
+                            except:
+                                print("got invalid frame! "+str(frame))
+                                break
 
+                        else:
+                            break
+                    else:
+                        break
+
+            except Exception as e:
+                print(traceback.format_exc())
+                print("server unresponsive")
+                self.quit()
+                break
+        print("recv done")
         return frame
 
     def updatePing(self):
