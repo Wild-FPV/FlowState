@@ -92,14 +92,17 @@ class RFEnvironment:
             pivot = camList['MapCameraPivot']
             mapCamera = camList['Map Camera']
             if(rx.isSpectating()):
-                desiredVTX = None
+                self.currentVTX = None
                 for vtx in self.emitters:
+                    print(vtx.getPilotTag()+" channel: "+str(vtx.getChannel()))
                     if(vtx.getChannel()==rx.getChannel()):
                         if(not vtx.getPitMode()):
-                            desiredVTX = vtx
+                            self.currentVTX = vtx
+
                             break
+                print(str(rx.getChannel())+","+str(self.currentVTX.getChannel()))
                 self.setCamera(mapCamera)
-                vp = desiredVTX.object.position
+                vp = self.currentVTX.object.position
                 cp = pivot.position
                 #newPos = [(vp[0]*0.5)+(cp[0]*0.5),(vp[1]*0.5)+(cp[1]*0.5),(vp[2]*0.5)+(cp[2]*0.5)]
                 newPos = vp
@@ -142,7 +145,6 @@ class RFEnvironment:
                 #quadFPVCameras[3].object.useViewport = True
             else:
                 signalStrength = noiseFloor
-                self.currentVTX = None
                 strongestSignalStrength = 0
                 interference = noiseFloor #we will use this to find out how much of the received signal is intentional or interference
                 for vtx in self.emitters:
@@ -172,7 +174,7 @@ class RFEnvironment:
                     fr = "(frequency = "+str(vtx.getFrequency())+"), "
                     #pstr+= pr
                     pstr+=fr
-
+            if(self.receivers!=[]):
                 #print(pstr)
                 if(self.currentVTX!=None):
                     interference -= strongestSignalStrength #we don't want to count the current image as interference

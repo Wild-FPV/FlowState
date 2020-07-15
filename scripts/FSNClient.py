@@ -9,7 +9,8 @@ import FSNObjects
 import traceback
 from uuid import getnode as get_mac
 
-UPDATE_FRAMERATE = 60
+UPDATE_FRAMERATE = 150
+MAX_SEND_BUFFER = 10
 
 class FSNClient:
     def __init__(self, address, port):
@@ -31,6 +32,7 @@ class FSNClient:
         self.lastSentTime = time.time()
         self.clientID = str(time.perf_counter())+str(get_mac())
         self.ping = 0
+        self.sendBufferCount = 0
 
     def connect(self):
         if(not self.serverConnected):
@@ -53,7 +55,7 @@ class FSNClient:
                         try:
                             frame = ast.literal_eval(frame.decode("utf-8"))
                         except:
-                            print("got invalid frame! "+str(frame))
+                            flowState.log("got invalid frame! "+str(frame))
                             frame = None
                         if(frame!=None):
                             if(self.messageHandler!=None):
@@ -64,7 +66,7 @@ class FSNClient:
                         break
 
                     if len(self.buffer) > 655360:
-                        print("message too long! Disregarding")
+                        flowState.log("message too long! Disregarding")
                         self.buffer = b''
                         break
                 except Exception as e:
@@ -106,11 +108,18 @@ class FSNClient:
         if(self.isConnected()): #the socket is still connected
             if(time.time()-self.lastSentTime>10.0):
                 print("server unresponsive!")
-            #if(self.serverReady):# or (time.time()-self.lastSentTime>1.0): #If we got a heartbeat, or if one second has passed
-            if(self.serverReady and (time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE)) or (time.time()-self.lastSentTime>1):
+            #if(self.serverReady and (time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE)) or (time.time()-self.lastSentTime>1):
+            #if(self.serverReady and (time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE)) or ((self.sendBufferCount<10) and (time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE)):
+            #the client will send at the desired frame rate, unless it hasn't seen a tick from the server in awhile
+            #This ensures the server always has fresh data coming form the client
+            if(self.sendBufferCount<MAX_SEND_BUFFER and time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE):
                 self.lastSentTime = time.time()
-
+                self.sendBufferCount += 1
                 messageOut = str(self.state).encode("utf-8")
                 self.sendFrame(messageOut)
                 self.serverReady = False #this gets set true once we get another ack
+            if self.sendBufferCount>=MAX_SEND_BUFFER:
+                print("we are sending data too fast!!!")
+            print(self.sendBufferCount)
+
             frame = self.recvFrame() #let's recv and handle anything the server has sent

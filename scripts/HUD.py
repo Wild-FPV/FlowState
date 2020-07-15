@@ -26,7 +26,10 @@ try:
     #let's try to display the channel the user is on
     ping = ""
     if(flowState.getGameMode()==flowState.GAME_MODE_MULTIPLAYER):
-        ping = ", ping: "+str(int(flowState.getNetworkClient().ping))+"ms"
+        if(flowState.getNetworkClient().ping>1000):
+            ping = ", network connection poor"
+        else:
+            ping = ", ping: "+str(int(flowState.getNetworkClient().ping))+"ms"
     camera = logic.player['camera']
     vtx = camera['vtx']
     rxChannel['Text'] = "VTX Channel: "+str(vtx.getChannel()+1)+ping

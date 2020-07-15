@@ -41,7 +41,7 @@ def getKeyStates(keyboard):
             releasedKeys.append(event[0])
     return (pressedKeys,activeKeys,inactiveKeys,releasedKeys)
 
-def loadMultiplayerServer(serverName):
+def loadMultiplayerServer(serverName,serverPort):
     scenes = logic.getSceneList()
     currentScene = logic.getCurrentScene()
     for scene in scenes:
@@ -53,9 +53,10 @@ def loadMultiplayerServer(serverName):
     flowState.setGameMode(flowState.GAME_MODE_MULTIPLAYER)
     flowState.setViewMode(flowState.VIEW_MODE_PLAY)
     #flowState.selectMap("multiplayer.fmp")
-    currentScene.replace("Main Game")
     flowState.setServerIP(serverName)
-    flowState.setServerPort(50001)
+    flowState.setServerPort(serverPort)
+    currentScene.replace("Main Game")
+
 
 def multiplayerAction():
     pass
@@ -138,9 +139,15 @@ else:
                 #owner['Text'].replace('\n','')
                 #owner['Text'].replace('\t',''
                 owner['Text'] = owner['Text'].rstrip()
-                serverIP = owner['Text']
-                print("loading server at ip"+str(serverIP))
-                loadMultiplayerServer(serverIP)
+                textInputs = owner['Text'].split(":")
+                serverIP = textInputs[0]
+                if(len(textInputs)>1):
+                    serverPort = textInputs[1]
+                else:
+                    serverPort = 50001
+                print("setting server port to "+str(serverPort))
+                print("setting server ip to "+str(serverIP))
+                loadMultiplayerServer(serverIP,serverPort)
             else:
                 print(pressedKeys)
                 #^text box stuff. please move into UI TextInput^

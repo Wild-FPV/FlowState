@@ -326,7 +326,7 @@ class FlowState:
         return self._serverPort
 
     def setServerPort(self,serverPort):
-        self._serverPort = serverPort
+        self._serverPort = int(serverPort)
 
     def getNetworkClient(self):
         return self._networkClient
