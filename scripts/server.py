@@ -210,7 +210,8 @@ def clientThread(conn, addr,runEvent):
                 print("player hasn't sent a message in awhile...")
             try:
                 buffer += conn.recv(2048)
-                print(len(buffer))
+                if(len(buffer)>4096):
+                    print("WARNING: server can't keep up - "+str(len(buffer)))
                 for i in range(0,100):
                     if(len(buffer)>65536): #avoid getting spammed by large, bogus messages
                         print("buffer overflowed!")
@@ -242,7 +243,7 @@ def clientThread(conn, addr,runEvent):
                             #a player is sending an update about their current state
                             if messageType == FSNObjects.PLAYER_STATE:
                                 readyToAck = True
-                                handlePlayerState(frame,conn)
+                                handlePlayerState(frame)
                         else: #the buffer contains a partial message. Go recv more data
                             break
                     else: #we've read everything in the buffer
@@ -268,13 +269,13 @@ def clientThread(conn, addr,runEvent):
     print("client thread ending")
     playSound(SOUND_PLAYER_LEFT)
 
-def handlePlayerState(frame,conn):
+def handlePlayerState(frame):
     message = FSNObjects.PlayerState.getMessage(frame)
     senderID = message.senderID
     newClientState = frame
     with lock:
         clientStates[senderID] = newClientState
-        clientConnections[senderID]['readyForData'] = True
+        #clientConnections[senderID]['readyForData'] = True
 
 def handlePlayerEvent(frame,conn):
     print("handlePlayerEvent")
@@ -362,10 +363,14 @@ def sendPlayerUpdates():
     with lock:
         for clientID in clientConnections:
             socket = clientConnections[clientID]['socket']
-            clientReady = clientConnections[clientID]['readyForData']
+            if('lastSend' not in clientConnections[clientID]): #we'll use this to make sure we don't flood the client
+                clientConnections[clientID]['lastSend'] = time.time()
+            clientLastSend = clientConnections[clientID]['lastSend']
+            clientReady = (time.time()-clientLastSend>1.0/60.0)
             if clientReady:
-                clientConnections[clientID]['readyForData'] = False
+                clientConnections[clientID]['lastSend'] = time.time()
                 sendAllClientStates(socket,clientID)
+            #print(str(clientID)+": "+str(time.time()-clientLastSend))
 def sendAllClientStates(socket,senderID):
     with lock:
         for receiverID in clientStates:
@@ -380,9 +385,6 @@ def broadcast(message, socket, senderID, highPriority=True):
         with lock:
             for receiverID in clientConnections:
                 clientSocket = clientConnections[receiverID]['socket']
-                #clientReady = clientConnections[senderID]['readyForData']
-                #if clientSocket!=socket and (clientReady or highPriority):
-                #    clientConnections[senderID]['readyForData'] = False
                 if(receiverID!=senderID):
                     send(message,clientSocket)
 

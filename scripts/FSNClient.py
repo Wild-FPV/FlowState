@@ -9,7 +9,7 @@ import FSNObjects
 import traceback
 from uuid import getnode as get_mac
 
-UPDATE_FRAMERATE = 150
+UPDATE_FRAMERATE = 60
 MAX_SEND_BUFFER = 10
 
 class FSNClient:
@@ -19,7 +19,6 @@ class FSNClient:
         self.server.settimeout(10)
         self.serverIP = address#socket.gethostname()
         self.serverConnected = False
-        print(self.serverIP)
         self.serverPort = port#5069
         myIP = socket.gethostname()
         self.networkReady = False
@@ -46,12 +45,12 @@ class FSNClient:
         read_sockets,write_socket, error_socket = select.select([self.server],[],[],0.0)
         for socks in read_sockets:
             try:
-                print("reading socket data")
-                self.buffer += socks.recv(2048)
-                print("buffer: "+str(len(self.buffer)))
-                for i in range(0,100):
+                self.buffer += socks.recv(4096)
+                if(len(self.buffer)>4096):
+                    print("WARNING: client can't keep up - "+str(len(self.buffer)))
+                for i in range(0,1000):
                     if(len(self.buffer)>655360): #avoid getting spammed by large, bogus messages
-                        print("message too long! Disregarding")
+                        print("WARNING: message too long! Disregarding")
                         self.buffer = b''
                         break
                     if(len(self.buffer)>0):
@@ -62,13 +61,11 @@ class FSNClient:
                             self.buffer = self.buffer[delimIndex+1:]
                             try:
                                 frame = ast.literal_eval(frame.decode("utf-8"))
-                                print("got valid frame: "+str(frame))
                                 if(self.messageHandler!=None):
                                     if(frame!=None):
-                                        print("handling frame")
                                         self.messageHandler(frame)
                             except:
-                                print("got invalid frame! "+str(frame))
+                                print("WARNING: got invalid frame! "+str(frame))
                                 break
 
                         else:
@@ -78,10 +75,9 @@ class FSNClient:
 
             except Exception as e:
                 print(traceback.format_exc())
-                print("server unresponsive")
+                print("WARNING: server unresponsive")
                 self.quit()
                 break
-        print("recv done")
         return frame
 
     def updatePing(self):
@@ -127,6 +123,6 @@ class FSNClient:
                 self.serverReady = False #this gets set true once we get another ack
             if self.sendBufferCount>=MAX_SEND_BUFFER:
                 print("we are sending data too fast!!!")
-            print(self.sendBufferCount)
+                print(self.sendBufferCount)
 
             frame = self.recvFrame() #let's recv and handle anything the server has sent
