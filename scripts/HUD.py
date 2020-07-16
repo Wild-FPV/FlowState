@@ -70,7 +70,7 @@ holeshotStr = formatLapTime(flowState.getRaceState().getChannelHoleShot(playerRX
 laps['Text'] = pilotTagStr
 lastLap['Text'] = "LAST LAP: "+lastLapStr
 bestLap['Text'] = "BEST LAP: "+bestLapStr
-holeshot['Text'] = "HOLESHOT: "+holeshotStr
+holeshot['Text'] = ""#HOLESHOT: "+holeshotStr
 #errorLog['Text'] = "Error: "+logic.errorLog
 
 #flowState.debug("currentCheckpoint = "+str(flowState.getRaceState().currentCheckpoint))
@@ -85,20 +85,20 @@ else:
 
 #let's show the user how well they did
 raceCompletionText = ""
+lapsCompletedText = flowState.getRaceState().getChannelLapCount(playerRXFrequency)
 if flowState.getRaceState().raceCompleted():
     raceCompletionText += "RACE COMPLETE: "
     raceCompletionText += flowState.getSelectedMapName()
-raceCompletionText += "\n"
-fastX = flowState.getRaceState().getRaceFormat().consecutiveLapCount
-fastXCon = flowState.getRaceState().getChannelFastestConcecutiveTime(playerRXFrequency,fastX)
-raceCompletionText += "fast "+str(fastX)+" consecutive laps: "+formatLapTime(fastXCon)
-raceCompletionText += "\n"
-lapsCompletedText = flowState.getRaceState().getChannelLapCount(playerRXFrequency)
-raceCompletionText += "laps: "+str(lapsCompletedText)
-raceCompletionText += "\n"
-timeCompletedText = flowState.getRaceState().getChannelRaceCompletionTime(playerRXFrequency)
-raceCompletionText += "time: "+formatLapTime(timeCompletedText)
-raceCompletionText += "\n"
+    raceCompletionText += "\n"
+    fastX = flowState.getRaceState().getRaceFormat().consecutiveLapCount
+    fastXCon = flowState.getRaceState().getChannelFastestConcecutiveTime(playerRXFrequency,fastX)
+    raceCompletionText += "fast "+str(fastX)+" consecutive laps: "+formatLapTime(fastXCon)
+    raceCompletionText += "\n"
+    raceCompletionText += "laps: "+str(lapsCompletedText)
+    raceCompletionText += "\n"
+    timeCompletedText = flowState.getRaceState().getChannelRaceCompletionTime(playerRXFrequency)
+    raceCompletionText += "time: "+formatLapTime(timeCompletedText)
+    raceCompletionText += "\n"
 try:
     raceCompletionText += "Rank: "+str(flowState.getRaceState().getPlayerRanks().index(playerRXFrequency)+1)
 except:
@@ -110,9 +110,21 @@ logic.flowState.track['nextCheckpoint'] = -1
 
 
 timesText = "TIME: "+formatLapTime(flowState.getRaceState().getRaceTime())
-lapTimes = flowState.getRaceState().getChannelLapTimes(playerRXFrequency)
-for i in range(0,len(lapTimes)):
-    timesText+='\n'
-    timesText+="LAP "+str(i+1)+": "+formatLapTime(lapTimes[i])
+timesText+="\nLAPS: "+str(lapsCompletedText)
+#lapTimes = flowState.getRaceState().getChannelLapTimes(playerRXFrequency)
+#for i in range(0,len(lapTimes)):
+#    timesText+='\n'
+#    timesText+="LAP "+str(i+1)+": "+formatLapTime(lapTimes[i])
 
 times['Text'] = timesText
+
+#disables the OSD if it's turned off in the settings
+if(flowState.getGraphicsSettings().OSDEnabled==False):
+    times['Text'] = ""
+    laps['Text'] = ""
+    lastLap['Text'] = ""
+    bestLap['Text'] = ""
+    holeshot['Text'] = ""
+    rxChannel['Text'] = ""
+    gForceCounter['Text'] = ""
+    flowState.setNotification({"Text":""})

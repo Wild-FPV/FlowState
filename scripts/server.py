@@ -208,8 +208,6 @@ def clientThread(conn, addr,runEvent):
             if(time.time()-lastRecv > 20.0): #time out the client if they become unresponsive
                 print("client became unresponseive")
                 break
-            if(time.time()-lastRecv > 10.0):
-                print("player hasn't sent a message in awhile...")
             try:
                 buffer += conn.recv(2048)
                 if(len(buffer)>4096):
