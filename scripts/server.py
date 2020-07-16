@@ -22,6 +22,8 @@ SOUND_PLAYER_CHECKPOINT = 0
 SOUND_PLAYER_LEFT = 1
 SOUND_PLAYER_JOIN = 2
 
+TICKRATE = 30
+
 raceband = [5658,5695,5732,5769,5806,5843,5880,5917]
 
 def versionIs3():
@@ -244,12 +246,16 @@ def clientThread(conn, addr,runEvent):
                             if messageType == FSNObjects.PLAYER_STATE:
                                 readyToAck = True
                                 handlePlayerState(frame)
+                                message = FSNObjects.PlayerState.getMessage(frame)
+                                senderID = message.senderID
+                                clientConnections[senderID]['readyForData'] = True
                         else: #the buffer contains a partial message. Go recv more data
                             break
                     else: #we've read everything in the buffer
                         if(readyToAck): #one of the messages we processed was a player state update
                             readyToAck = False
                             sendAck(conn)
+
                         break
 
             except Exception as e:
@@ -363,22 +369,25 @@ def sendPlayerUpdates():
     with lock:
         for clientID in clientConnections:
             socket = clientConnections[clientID]['socket']
-            if('lastSend' not in clientConnections[clientID]): #we'll use this to make sure we don't flood the client
-                clientConnections[clientID]['lastSend'] = time.time()
-            clientLastSend = clientConnections[clientID]['lastSend']
-            clientReady = (time.time()-clientLastSend>1.0/60.0)
+            #if('lastSend' not in clientConnections[clientID]): #we'll use this to make sure we don't flood the client
+            #    clientConnections[clientID]['lastSend'] = time.time()
+            #clientLastSend = clientConnections[clientID]['lastSend']
+            clientReady = clientConnections[clientID]['readyForData']
             if clientReady:
-                clientConnections[clientID]['lastSend'] = time.time()
+                clientConnections[clientID]['readyForData'] = False
                 sendAllClientStates(socket,clientID)
             #print(str(clientID)+": "+str(time.time()-clientLastSend))
 def sendAllClientStates(socket,senderID):
     with lock:
-        for receiverID in clientStates:
-            clientState = clientStates[receiverID]
-            clientSocket = clientConnections[receiverID]['socket']
-            if clientState!={}: #this can be the case if the client just joined and we don't have a state yet
-                if receiverID!=senderID: #we don't need to send a clients state back to itself
-                    send(clientState,socket)
+        try: #if we fail to send, the client gets removed which changes the size of the dict
+            for receiverID in clientStates:
+                clientState = clientStates[receiverID]
+                clientSocket = clientConnections[receiverID]['socket']
+                if clientState!={}: #this can be the case if the client just joined and we don't have a state yet
+                    if receiverID!=senderID: #we don't need to send a clients state back to itself
+                        send(clientState,socket)
+        except:
+            pass
 
 def broadcast(message, socket, senderID, highPriority=True):
     try:

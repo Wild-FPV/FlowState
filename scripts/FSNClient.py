@@ -9,8 +9,8 @@ import FSNObjects
 import traceback
 from uuid import getnode as get_mac
 
-UPDATE_FRAMERATE = 60
-MAX_SEND_BUFFER = 10
+UPDATE_FRAMERATE = 30
+MAX_SEND_BUFFER = 5
 
 class FSNClient:
     def __init__(self, address, port):
@@ -115,7 +115,8 @@ class FSNClient:
             #if(self.serverReady and (time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE)) or ((self.sendBufferCount<10) and (time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE)):
             #the client will send at the desired frame rate, unless it hasn't seen a tick from the server in awhile
             #This ensures the server always has fresh data coming form the client
-            if(self.sendBufferCount<MAX_SEND_BUFFER and time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE):
+            if(self.sendBufferCount<MAX_SEND_BUFFER and time.time()-self.lastSentTime>1.0/UPDATE_FRAMERATE) or (time.time()-self.lastSentTime>1):
+                #print("sending "+str(time.time()))
                 self.lastSentTime = time.time()
                 self.sendBufferCount += 1
                 messageOut = str(self.state).encode("utf-8")

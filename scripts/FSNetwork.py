@@ -160,7 +160,7 @@ def clientMessageHandler(message):
                 messageBody = startTime
                 MessageTo = None
                 MessageFrom = None
-                flowState._countdownTime = 10+(10-(startTime-time.time()))
+                flowState._countdownTime = 10#+(10-(startTime-time.time()))
                 #if the player is 2 secodns ahead, the countdown should be
                 #flowState._countdownTime = startTime-time.time()
 
@@ -190,6 +190,7 @@ def clientMessageHandler(message):
                 if(key==flowState.getNetworkClient().clientID):
                     pass
                 else:
+                    print("adding player from server state: "+str(key))
                     newObj = scene.addObject("playerQuad",logic.player,0)
                     logic.peers[key] = newObj #lets add this new player model to a dict so we can reference it later
                     #print(logic.peers)

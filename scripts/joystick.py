@@ -642,5 +642,4 @@ if (logic.flowState.mapLoadStage == flowState.MAP_LOAD_STAGE_DONE):
             main()
         isSettled()
 if(own.sensors['Message'].positive):
-
     resetGame()

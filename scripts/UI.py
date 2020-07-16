@@ -444,7 +444,8 @@ class UI:
             self.scrollPosition = 0
             self.spacing = spacing
             self.disabled = False
-            self.maxScrollPosition = 10
+            self.maxScrollPosition = len(self.items)
+            print("MAX SCROLL POSITION: "+str(self.maxScrollPosition))
             self.minScrollPosition = 0
             self.owner = None
             try:
@@ -481,7 +482,7 @@ class UI:
             return (pressedKeys,activeKeys,inactiveKeys,releasedKeys)
 
         def scrollUp(self):
-            if(self.scrollPosition<self.maxScrollPosition*2):
+            if(self.scrollPosition<self.maxScrollPosition):
                 self.scrollPosition += 1
                 for element in self.items:
                     print(element.__dict__)
