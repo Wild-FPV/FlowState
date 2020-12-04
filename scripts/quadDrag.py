@@ -30,7 +30,7 @@ def main():
     pDrag = 0.225 #the magic parasitic drag number (needs to be measured)
     pDrag += ((droneSettings.pDrag-70)/1000) #allow the user to change parasitic drag by +/- 0.05
 
-    iDrag = 0.675 #the magic induced drag number (needs to be measured)
+    iDrag = 0.1125#0.675 #the magic induced drag number (needs to be measured)
     iDrag += ((droneSettings.iDrag-70)/1000) #allow the user to change induced drag by +/- 0.05
 
     totalDragMultiplier = 1.0*((droneSettings.weight/500)**0.75) #we're going to assume that the drone's size scales with the weight until we have measurements from parts
@@ -40,22 +40,24 @@ def main():
     velocity = owner.getLinearVelocity(True) #local velocity of the model
 
     #let's get the model's Z axis as a vector
-    vect = owner.orientation.to_euler()
-    topVec = mathutils.Vector((0.0, 0.0, 1.0))
+    vect = owner.orientation
+    #topVec = mathutils.Vector((0.0, 0.0, 1.0))
+    topVec = mathutils.Vector((vect[0][2],vect[1][2],vect[2][2]))
 
     #measure the model's angle of attack
-    aoa = m.degrees(angle(velocity,topVec))
+    aoa = m.degrees(angle(owner.getLinearVelocity(False),topVec))
 
     #let's get the magnitude of the airflow vector
     mag = m.sqrt((velocity[0]**2)+(velocity[1]**2)+(velocity[2]**2))
 
     #the angle of attack goes between 180 and 0, let's make it go from 1 to -1, apply our induced drag multiplier, and multiplay by the magnitude of the velocity (lift increases as airspeed increases)
     lift = (((aoa-90))/90)*liftMultiplier*mag
-    liftVec = [0,0,lift] #left or downforce vector
 
     #let's create a vector for our parasitic drag, taking into account our drag multiplier
     drag = [-velocity[0]*dragMultiplier,-velocity[1]*dragMultiplier,-velocity[2]*dragMultiplier] #Parasitic drag
     #let's combine both parasitic and induced drag into a new vector
-    aeroForce = [liftVec[0]+drag[0],liftVec[1]+drag[1],liftVec[2]+drag[2]]
+    aeroForce = [drag[0],drag[1],drag[2]+lift]
     owner.applyForce(aeroForce,True) #apply the vector
+    #drawStuff(owner.position,owner.getLinearVelocity(False),topVec)
+
 main()

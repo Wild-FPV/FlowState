@@ -4,6 +4,8 @@
 # Windows
 #FPV
 #TBS Tango 2 (tested)
+a3154300000000000000504944564944,VControl,platform:Windows,leftx:a2,lefty:a3,rightx:a0,righty:a1,lefttrigger:b6,righttrigger:b4,
+4e28a179000000000000504944564944,Flysky FS-i6XCN,platform:Windows,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:b1,righttrigger:b7,
 d8041057000000000000504944564944,TBS Joystick,platform:Windows,leftx:a3,lefty:a0,rightx:a1,righty:a2,lefttrigger:a4,righttrigger:a5,
 #spektrum dongle (tested with Spektrum DXe)
 83042b57000000000000504944564944,SPEKTRUM RECEIVER,platform:Windows,leftx:a0,lefty:a1,rightx:a2,righty:a3,righttrigger:b0,dpup:b1,
@@ -24,6 +26,8 @@ d8041057000000000000504944564944,TBS Joystick,platform:Windows,leftx:a3,lefty:a0
 4e28ff7f000000000000504944564944,FS-i6S emulator,platform:Windows,leftshoulder:b0,rightshoulder:b5,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:b1,righttrigger:b3,
 #vJoy user submitted
 3412adbe000000000000504944564944,vJoy Device,platform:Windows,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:a4,righttrigger:a5,
+#DX6i user submitted
+7f1227e0000000000000504944564944,easyFly2 Interface,platform:Windows,b:a3,leftx:a4,lefty:a0,rightx:a1,righty:a2,lefttrigger:a5,
 
 #DIY
 #Teensy Arduino

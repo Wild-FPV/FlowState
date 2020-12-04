@@ -193,7 +193,10 @@ def playSound(sound):
 def serverThread(a,b,runEvent):
     lastSend = time.time()
     while runEvent.is_set():
-        sendPlayerUpdates()
+        if(clientStates!={}):
+            sendPlayerUpdates()
+        else:
+            time.sleep(1)
     print("client update thread ending...")
 
 #handles receiving and parsing messages from each of the clients
@@ -230,12 +233,6 @@ def clientThread(conn, addr,runEvent):
                             lastRecv = time.time()
                             # a player is senting an event
                             if messageType == FSNObjects.PLAYER_EVENT:
-                                try:
-                                    if(frame[FSNObjects.PLAYER_EVENT_TYPE_KEY] == FSNObjects.PlayerEvent.EVENT_CHECKPOINT_COLLECT):
-                                        playSound(SOUND_PLAYER_CHECKPOINT)
-                                except Exception as e:
-                                    print(e)
-                                print("handling player event: "+str(frame))
                                 connectionOpen = handlePlayerEvent(frame,conn)
                                 if(connectionOpen == False):
                                     break
@@ -279,10 +276,8 @@ def handlePlayerState(frame):
     newClientState = frame
     with lock:
         clientStates[senderID] = newClientState
-        #clientConnections[senderID]['readyForData'] = True
 
 def handlePlayerEvent(frame,conn):
-    print("handlePlayerEvent")
     message = FSNObjects.PlayerEvent.getMessage(frame)
     broadcast(message,conn,message.senderID)
     #a new player is joining the game
@@ -340,18 +335,26 @@ def handlePlayerEvent(frame,conn):
         #let's let the new player know the state of the game
     #A player has just quit the game
     if(message.eventType==FSNObjects.PlayerEvent.PLAYER_QUIT):
-        print("- player quit: "+str(message.senderID))
+        try:
+            print("- player quit: "+str(message.senderID))
+        except Exception as e:
+            print(traceback.format_exc())
+            print("WARNING: unable to display player event")
+            print(str(message))
         connectionOpen = False
         return False
+    if(message.eventType == FSNObjects.PlayerEvent.EVENT_CHECKPOINT_COLLECT):
+        playSound(SOUND_PLAYER_CHECKPOINT)
+        print("- "+str(getPlayerNameByID(message.senderID))+" collected a checkpoint: "+str(message.extra))
 
     #A player event has occured
     if(message.eventType==FSNObjects.PlayerEvent.PLAYER_MESSAGE):
-        print("- player sent game message :"+str(message.extra))
+        print("- "+str(getPlayerNameByID(message.senderID))+" sent game message: "+str(message.extra))
         send(message, conn)
 
     #A player reset event has occured
     if(message.eventType==FSNObjects.PlayerEvent.PLAYER_RESET):
-        print("- player sent game reset message :"+str(message.extra))
+        print("- "+str(getPlayerNameByID(message.senderID))+" sent game reset message: "+str(message.extra))
         send(message, conn)
 
     return True
@@ -367,14 +370,12 @@ def sendPlayerUpdates():
     with lock:
         for clientID in clientConnections:
             socket = clientConnections[clientID]['socket']
-            #if('lastSend' not in clientConnections[clientID]): #we'll use this to make sure we don't flood the client
-            #    clientConnections[clientID]['lastSend'] = time.time()
-            #clientLastSend = clientConnections[clientID]['lastSend']
             clientReady = clientConnections[clientID]['readyForData']
             if clientReady:
                 clientConnections[clientID]['readyForData'] = False
                 sendAllClientStates(socket,clientID)
             #print(str(clientID)+": "+str(time.time()-clientLastSend))
+
 def sendAllClientStates(socket,senderID):
     with lock:
         try: #if we fail to send, the client gets removed which changes the size of the dict
@@ -416,22 +417,45 @@ def remove(socketToRemove):
     removedID = None
 
     with lock:
-        for key in clientStates:
-            clientSocket = clientConnections[key]['socket']
+        for key in clientConnections:
+            try:
+                clientSocket = clientConnections[key]['socket']
+            except: #somehow the clientConnections will sometimes be missing a key that matches. This needs to be investigated
+                print("client connection with key "+str(key)+" not found")
+                clientSocket = None
             if(clientSocket == socketToRemove):
                 print("disconnecting client: "+str(key)+" on socket: "+str(socketToRemove))
                 removedID = key
 
         if removedID!=None:
-            del clientStates[removedID]
-            del clientConnections[removedID]
+            try:
+                print(str(getPlayerNameByID(removedID))+" left the race")
+                del clientStates[removedID]
+            except:
+                print("failed to find ID in clientStates: "+str(removedID))
+                print(clientStates)
+            try:
+                del clientConnections[removedID]
+            except:
+                print("failed to find ID in clientConnections: "+str(removedID))
+                print(clientConnections)
 
-        print("remaning clientStates: "+str(clientStates))
-        print("remaning clientConnections: "+str(clientStates))
+        #print("remaning players: "+str(clientStates))
+        #print("remaning clientConnections: "+str(clientStates))
 
-    print("notifying other clients of client removal")
+    #print("notifying other clients of client removal")
     quitEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.PLAYER_QUIT,removedID)
     broadcast(quitEvent, None, None)
+
+
+def getPlayerNameByID(stateID):
+    try:
+        state = clientStates[stateID]
+        playerName = state[FSNObjects.PlayerState.PLAYER_NAME]
+    except Exception as e:
+        print(traceback.format_exc())
+        playerName = "unkown player"
+    return playerName
 
 def main():
     global clientThreads
@@ -463,8 +487,6 @@ def main():
 
             conn, addr = server.accept()
             conn.settimeout(20)
-            """Maintains a list of clients for ease of broadcasting
-            a message to all available people in the chatroom"""
 
             # prints the address of the user that just connected
             print(str(addr) + " connected")

@@ -88,7 +88,10 @@ raceCompletionText = ""
 lapsCompletedText = flowState.getRaceState().getChannelLapCount(playerRXFrequency)
 if flowState.getRaceState().raceCompleted():
     raceCompletionText += "RACE COMPLETE: "
-    raceCompletionText += flowState.getSelectedMapName()
+    if(flowState.getGameMode()==flowState.GAME_MODE_SINGLE_PLAYER):
+        raceCompletionText += flowState.getSelectedMapName()
+    else:
+        raceCompletionText += "press space to restart"
     raceCompletionText += "\n"
     fastX = flowState.getRaceState().getRaceFormat().consecutiveLapCount
     fastXCon = flowState.getRaceState().getChannelFastestConcecutiveTime(playerRXFrequency,fastX)
