@@ -13,7 +13,6 @@ def main():
         logic.lastGhostUpdate
     except:
         logic.lastGhostUpdate = time.time()
-        print("FOOOO BAR!")
 
     if abs(time.time()-logic.lastGhostUpdate) >= (1.0/120):
     #if True:

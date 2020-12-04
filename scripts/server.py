@@ -13,6 +13,16 @@ import copy
 import FSFileHandler
 from abstract.RaceFormat import RaceFormat
 import sys
+try:
+    import winsound
+except:
+    pass
+
+SOUND_PLAYER_CHECKPOINT = 0
+SOUND_PLAYER_LEFT = 1
+SOUND_PLAYER_JOIN = 2
+
+TICKRATE = 30
 
 raceband = [5658,5695,5732,5769,5806,5843,5880,5917]
 
@@ -32,6 +42,7 @@ def getUserInput(prompt):
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+server.settimeout(10)
 delim = b'\x1E'
 IP_address = socket.gethostname()
 
@@ -165,52 +176,88 @@ def debugThread(a,b,runEvent):
             print(e)
             print("invalid command \""+str(command)+"\"")
 
+def playSound(sound):
+    try:
+        #
+        #winsound.Beep(1046, 75)
+        if(sound==SOUND_PLAYER_CHECKPOINT):
+            winsound.PlaySound(r"C:\Users\Timothy\Documents\FlowState\sounds\checkpoint.wav", winsound.SND_FILENAME | winsound.SND_ASYNC)
+        if(sound==SOUND_PLAYER_JOIN):
+            winsound.Beep(1046, 75)
+        if(sound==SOUND_PLAYER_LEFT):
+            winsound.Beep(1046, 75)
+    except:
+        pass
+
 #handles compiling and sending the messages to each of the players
 def serverThread(a,b,runEvent):
     lastSend = time.time()
     while runEvent.is_set():
-        sendPlayerUpdates()
+        if(clientStates!={}):
+            sendPlayerUpdates()
+        else:
+            time.sleep(1)
     print("client update thread ending...")
 
 #handles receiving and parsing messages from each of the clients
 def clientThread(conn, addr,runEvent):
+    conn.settimeout(10)
     connectionOpen = True
     lastRecv = time.time()
     buffer = b''
+    readyToAck = True
     while runEvent.is_set():
-        if(time.time()-lastRecv > 20.0): #time out the client if they become unresponsive
-            print("client became unresponseive")
-            break
-        try:
-            buffer += conn.recv(2048)
-            while(len(buffer)>0):
-                if(not runEvent.is_set()):
-                    break
-                delimIndex = buffer.find(delim)
-
-                #if delim in buffer:
-                if(delimIndex!=-1):
-                    frame = buffer[:delimIndex]
-                    buffer = buffer[delimIndex+1:]
-                    frame = ast.literal_eval(frame.decode("utf-8"))
-                    lastRecv = time.time()
-                    messageType = frame[FSNObjects.MESSAGE_TYPE_KEY]
-
-                    # a player is senting an event
-                    if messageType == FSNObjects.PLAYER_EVENT:
-                        print("handling player event: "+str(frame))
-                        connectionOpen = handlePlayerEvent(frame,conn)
-                        if(connectionOpen == False):
+        if(connectionOpen):
+            if(time.time()-lastRecv > 20.0): #time out the client if they become unresponsive
+                print("client became unresponseive")
+                break
+            try:
+                buffer += conn.recv(2048)
+                if(len(buffer)>4096):
+                    print("WARNING: server can't keep up - "+str(len(buffer)))
+                for i in range(0,100):
+                    if(len(buffer)>65536): #avoid getting spammed by large, bogus messages
+                        print("buffer overflowed!")
+                        buffer = b''
+                        break
+                    if(len(buffer)>0):
+                        if(not runEvent.is_set()):
                             break
+                        delimIndex = buffer.find(delim)
+                        #if delim in buffer:
+                        if(delimIndex!=-1):
+                            frame = buffer[:delimIndex]
+                            buffer = buffer[delimIndex+1:]
+                            frame = ast.literal_eval(frame.decode("utf-8"))
+                            messageType = frame[FSNObjects.MESSAGE_TYPE_KEY]
+                            lastRecv = time.time()
+                            # a player is senting an event
+                            if messageType == FSNObjects.PLAYER_EVENT:
+                                connectionOpen = handlePlayerEvent(frame,conn)
+                                if(connectionOpen == False):
+                                    break
 
-                    #a player is sending an update about their current state
-                    if messageType == FSNObjects.PLAYER_STATE:
-                        sendAck(conn)
-                        handlePlayerState(frame,conn)
+                            #a player is sending an update about their current state
+                            if messageType == FSNObjects.PLAYER_STATE:
+                                readyToAck = True
+                                handlePlayerState(frame)
+                                message = FSNObjects.PlayerState.getMessage(frame)
+                                senderID = message.senderID
+                                clientConnections[senderID]['readyForData'] = True
+                        else: #the buffer contains a partial message. Go recv more data
+                            break
+                    else: #we've read everything in the buffer
+                        if(readyToAck): #one of the messages we processed was a player state update
+                            readyToAck = False
+                            sendAck(conn)
 
-        except Exception as e:
-            print(traceback.format_exc())
-            connectionOpen = False
+                        break
+
+            except Exception as e:
+                print(traceback.format_exc())
+                connectionOpen = False
+                break
+        else:
             break
     try:
         conn.close()
@@ -221,22 +268,23 @@ def clientThread(conn, addr,runEvent):
     except:
         print(traceback.format_exc())
     print("client thread ending")
+    playSound(SOUND_PLAYER_LEFT)
 
-def handlePlayerState(frame,conn):
+def handlePlayerState(frame):
     message = FSNObjects.PlayerState.getMessage(frame)
     senderID = message.senderID
     newClientState = frame
     with lock:
         clientStates[senderID] = newClientState
-        clientConnections[senderID]['readyForData'] = True
 
 def handlePlayerEvent(frame,conn):
-    print("handlePlayerEvent")
     message = FSNObjects.PlayerEvent.getMessage(frame)
     broadcast(message,conn,message.senderID)
     #a new player is joining the game
     if(message.eventType==FSNObjects.PlayerEvent.PLAYER_JOINED):
-        print("- player joined")
+        playerName = message.extra['playerName']
+        print(str(playerName)+" joined the race")
+        playSound(SOUND_PLAYER_JOIN)
         #print("lock2 waiting...")
         with lock:
             #print("lock2 aquired")
@@ -264,8 +312,9 @@ def handlePlayerEvent(frame,conn):
                 for clientID in clientStates:
                     if(clientID!=message.senderID):
                         state = clientStates[clientID]
-                        playerFrequency = state[FSNObjects.PlayerState.PLAYER_VTX_FREQUENCY_KEY]
-                        usedFrequencies.append(playerFrequency)
+                        if(FSNObjects.PlayerState.PLAYER_VTX_FREQUENCY_KEY in state):
+                            playerFrequency = state[FSNObjects.PlayerState.PLAYER_VTX_FREQUENCY_KEY]
+                            usedFrequencies.append(playerFrequency)
             for channel in range(0,len(raceband)):
                 frequency = raceband[channel]
                 if(frequency not in usedFrequencies):
@@ -286,18 +335,26 @@ def handlePlayerEvent(frame,conn):
         #let's let the new player know the state of the game
     #A player has just quit the game
     if(message.eventType==FSNObjects.PlayerEvent.PLAYER_QUIT):
-        print("- player quit: "+str(message.senderID))
+        try:
+            print("- player quit: "+str(message.senderID))
+        except Exception as e:
+            print(traceback.format_exc())
+            print("WARNING: unable to display player event")
+            print(str(message))
         connectionOpen = False
         return False
+    if(message.eventType == FSNObjects.PlayerEvent.EVENT_CHECKPOINT_COLLECT):
+        playSound(SOUND_PLAYER_CHECKPOINT)
+        print("- "+str(getPlayerNameByID(message.senderID))+" collected a checkpoint: "+str(message.extra))
 
     #A player event has occured
     if(message.eventType==FSNObjects.PlayerEvent.PLAYER_MESSAGE):
-        print("- player sent game message :"+str(message.extra))
+        print("- "+str(getPlayerNameByID(message.senderID))+" sent game message: "+str(message.extra))
         send(message, conn)
 
     #A player reset event has occured
     if(message.eventType==FSNObjects.PlayerEvent.PLAYER_RESET):
-        print("- player sent game reset message :"+str(message.extra))
+        print("- "+str(getPlayerNameByID(message.senderID))+" sent game reset message: "+str(message.extra))
         send(message, conn)
 
     return True
@@ -317,23 +374,25 @@ def sendPlayerUpdates():
             if clientReady:
                 clientConnections[clientID]['readyForData'] = False
                 sendAllClientStates(socket,clientID)
+            #print(str(clientID)+": "+str(time.time()-clientLastSend))
+
 def sendAllClientStates(socket,senderID):
     with lock:
-        for receiverID in clientStates:
-            clientState = clientStates[receiverID]
-            clientSocket = clientConnections[receiverID]['socket']
-            if clientState!={}: #this can be the case if the client just joined and we don't have a state yet
-                if receiverID!=senderID: #we don't need to send a clients state back to itself
-                    send(clientState,socket)
+        try: #if we fail to send, the client gets removed which changes the size of the dict
+            for receiverID in clientStates:
+                clientState = clientStates[receiverID]
+                clientSocket = clientConnections[receiverID]['socket']
+                if clientState!={}: #this can be the case if the client just joined and we don't have a state yet
+                    if receiverID!=senderID: #we don't need to send a clients state back to itself
+                        send(clientState,socket)
+        except:
+            pass
 
 def broadcast(message, socket, senderID, highPriority=True):
     try:
         with lock:
             for receiverID in clientConnections:
                 clientSocket = clientConnections[receiverID]['socket']
-                #clientReady = clientConnections[senderID]['readyForData']
-                #if clientSocket!=socket and (clientReady or highPriority):
-                #    clientConnections[senderID]['readyForData'] = False
                 if(receiverID!=senderID):
                     send(message,clientSocket)
 
@@ -347,6 +406,7 @@ def send(message, socket):
             socket.send(dataOut)
     except Exception as e:
         print(traceback.format_exc())
+        remove(socket)
         #socket.close()
 
 def remove(socketToRemove):
@@ -357,22 +417,45 @@ def remove(socketToRemove):
     removedID = None
 
     with lock:
-        for key in clientStates:
-            clientSocket = clientConnections[key]['socket']
+        for key in clientConnections:
+            try:
+                clientSocket = clientConnections[key]['socket']
+            except: #somehow the clientConnections will sometimes be missing a key that matches. This needs to be investigated
+                print("client connection with key "+str(key)+" not found")
+                clientSocket = None
             if(clientSocket == socketToRemove):
                 print("disconnecting client: "+str(key)+" on socket: "+str(socketToRemove))
                 removedID = key
 
         if removedID!=None:
-            del clientStates[removedID]
-            del clientConnections[removedID]
+            try:
+                print(str(getPlayerNameByID(removedID))+" left the race")
+                del clientStates[removedID]
+            except:
+                print("failed to find ID in clientStates: "+str(removedID))
+                print(clientStates)
+            try:
+                del clientConnections[removedID]
+            except:
+                print("failed to find ID in clientConnections: "+str(removedID))
+                print(clientConnections)
 
-        print("remaning clientStates: "+str(clientStates))
-        print("remaning clientConnections: "+str(clientStates))
+        #print("remaning players: "+str(clientStates))
+        #print("remaning clientConnections: "+str(clientStates))
 
-    print("notifying other clients of client removal")
+    #print("notifying other clients of client removal")
     quitEvent = FSNObjects.PlayerEvent(FSNObjects.PlayerEvent.PLAYER_QUIT,removedID)
     broadcast(quitEvent, None, None)
+
+
+def getPlayerNameByID(stateID):
+    try:
+        state = clientStates[stateID]
+        playerName = state[FSNObjects.PlayerState.PLAYER_NAME]
+    except Exception as e:
+        print(traceback.format_exc())
+        playerName = "unkown player"
+    return playerName
 
 def main():
     global clientThreads
@@ -401,10 +484,9 @@ def main():
         connected"""
         try:
             #print("waiting for new clients...")
+
             conn, addr = server.accept()
             conn.settimeout(20)
-            """Maintains a list of clients for ease of broadcasting
-            a message to all available people in the chatroom"""
 
             # prints the address of the user that just connected
             print(str(addr) + " connected")
@@ -437,6 +519,8 @@ def main():
             print("successfully joined client threads")
 
             break
+        except socket.timeout:
+            pass
         except:
             print(traceback.format_exc())
             break

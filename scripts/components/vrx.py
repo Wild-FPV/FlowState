@@ -57,5 +57,8 @@ class VRX(bge.types.KX_PythonComponent):
         #print("we are on frequency "+str(frequency))
         return channel
 
+    def setFrequency(self,frequency):
+        self.frequency = frequency
+
     def update(self):
         pass

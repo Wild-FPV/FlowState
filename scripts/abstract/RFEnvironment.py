@@ -84,6 +84,7 @@ class RFEnvironment:
           interference = 1
 
     def update(self, noiseFloor):
+
         if(noiseFloor<1):
             noiseFloor = 1
         if(self.receivers!=[]):
@@ -92,14 +93,17 @@ class RFEnvironment:
             pivot = camList['MapCameraPivot']
             mapCamera = camList['Map Camera']
             if(rx.isSpectating()):
-                desiredVTX = None
+                self.currentVTX = None
                 for vtx in self.emitters:
+                    #print(vtx.getPilotTag()+" channel: "+str(vtx.getChannel()))
                     if(vtx.getChannel()==rx.getChannel()):
                         if(not vtx.getPitMode()):
-                            desiredVTX = vtx
+                            self.currentVTX = vtx
+
                             break
+                #print(str(rx.getChannel())+","+str(self.currentVTX.getChannel()))
                 self.setCamera(mapCamera)
-                vp = desiredVTX.object.position
+                vp = self.currentVTX.object.position
                 cp = pivot.position
                 #newPos = [(vp[0]*0.5)+(cp[0]*0.5),(vp[1]*0.5)+(cp[1]*0.5),(vp[2]*0.5)+(cp[2]*0.5)]
                 newPos = vp
@@ -141,54 +145,59 @@ class RFEnvironment:
                 #quadFPVCameras[2].object.useViewport = True
                 #quadFPVCameras[3].object.useViewport = True
             else:
-                signalStrength = noiseFloor
-                self.currentVTX = None
-                strongestSignalStrength = 0
-                interference = noiseFloor #we will use this to find out how much of the received signal is intentional or interference
-                for vtx in self.emitters:
-                    try:
-                        disonance = ((abs(vtx.getFrequency()-rx.getFrequency())*1)**2)+1 #let's get a number between 1 and ~11 to represent how far detuned our vrx is from our vtx
-                        rxPos = rx.object.position
-                        rxPos = [rxPos[0],rxPos[1],rxPos[2]+100]
-                        distance = vtx.object.getDistanceTo(rxPos)+0.1 #let's get the distance between the vtx and the vrx (but don't let it be 0)
-                        pitModePower = (1-vtx.getPitMode())
-                        signalStrength = (vtx.getPower()*pitModePower)/((distance/1000)**2)/disonance #let's use the inverse square law to determine the signal strength, then device it by the disonance of the channels.
+                try:
+                    signalStrength = noiseFloor
+                    strongestSignalStrength = 0
+                    interference = noiseFloor #we will use this to find out how much of the received signal is intentional or interference
+                    for vtx in self.emitters:
+                        try: #we need to get rid of this
+                            disonance = ((abs(vtx.getFrequency()-rx.getFrequency())*1)**2)+1 #let's get a number between 1 and ~11 to represent how far detuned our vrx is from our vtx
+                            rxPos = rx.object.position
+                            rxPos = [rxPos[0],rxPos[1],rxPos[2]+100]
+                            distance = vtx.object.getDistanceTo(rxPos)+0.1 #let's get the distance between the vtx and the vrx (but don't let it be 0)
+                            pitModePower = (1-vtx.getPitMode())
+                            signalStrength = (vtx.getPower()*pitModePower)/((distance/1000)**2)/disonance #let's use the inverse square law to determine the signal strength, then device it by the disonance of the channels.
 
-                        #print("signal strength:"+str(signalStrength)+", disonance: "+str(disonance)+", power: "+str(vtx.power)+", channel: "+str(vtx.channel)+", pit mode: "+str(vtx.pitMode))
-                        if(signalStrength>strongestSignalStrength):
-                            #let's note the emitter with the strongest signal as well as the value of that siganl strength
-                            self.currentVTX = vtx
-                            strongestSignalStrength = signalStrength
-                            vtx.signalStrength = signalStrength
+                            #print("signal strength:"+str(signalStrength)+", disonance: "+str(disonance)+", power: "+str(vtx.power)+", channel: "+str(vtx.channel)+", pit mode: "+str(vtx.pitMode))
+                            if(signalStrength>strongestSignalStrength):
+                                #let's note the emitter with the strongest signal as well as the value of that siganl strength
+                                self.currentVTX = vtx
+                                strongestSignalStrength = signalStrength
+                                vtx.signalStrength = signalStrength
 
-                        interference += signalStrength
-                    except:
-                        self.flowState.error("failed to calculate vtx signal")
-                        self.emitters.remove(vtx)
-                        break
-                pstr = ""
-                for vtx in self.receivers:
-                    #pr = "(power = "+str(vtx.getPower())
-                    fr = "(frequency = "+str(vtx.getFrequency())+"), "
-                    #pstr+= pr
-                    pstr+=fr
-
-                #print(pstr)
-                if(self.currentVTX!=None):
-                    interference -= strongestSignalStrength #we don't want to count the current image as interference
-                    if(interference<=0):
-                        interference = 0.1
-                    #print(strongestSignalStrength)
-                    snr = strongestSignalStrength/interference
-                    if snr <= 0: #don't let snr = 0
-                        snr = 0.1
-                    rx.snr = snr
-                    self.setCamera(self.currentVTX.object)
-                    render.drawLine(rx.object.position,vtx.object.position,[1,1,1])
-                    #self.flowState.log("emitters: "+str(self.emitters))
-                else: #there are no RF emitters
-                    rx.snr = 0.1
-                    #print("no RF emitters!!!")
+                            interference += signalStrength
+                        except:
+                            self.flowState.error("failed to calculate vtx signal")
+                            self.emitters.remove(vtx)
+                            break
+                    pstr = ""
+                    for vtx in self.receivers:
+                        #pr = "(power = "+str(vtx.getPower())
+                        fr = "(frequency = "+str(vtx.getFrequency())+"), "
+                        #pstr+= pr
+                        pstr+=fr
+                except:
+                    pass
+            if(self.receivers!=[]):
+                try: #we need to get rid of this
+                    #print(pstr)
+                    if(self.currentVTX!=None):
+                        interference -= strongestSignalStrength #we don't want to count the current image as interference
+                        if(interference<=0):
+                            interference = 0.1
+                        #print(strongestSignalStrength)
+                        snr = strongestSignalStrength/interference
+                        if snr <= 0: #don't let snr = 0
+                            snr = 0.1
+                        rx.snr = snr
+                        self.setCamera(self.currentVTX.object)
+                        render.drawLine(rx.object.position,vtx.object.position,[1,1,1])
+                        #self.flowState.log("emitters: "+str(self.emitters))
+                    else: #there are no RF emitters
+                        rx.snr = 0.1
+                        #print("no RF emitters!!!")
+                except:
+                    pass
 
     def handleMouseLook(self,pivotObject,camera,followObj,grabbing):
         mousePos = logic.mouse.position

@@ -15,6 +15,7 @@ class GraphicsSettings:
         self.shading = True
         self.raceLine = False
         self.aspectRatio4x3 = True
+        self.OSDEnabled = True
 
         #let's read in any arguments passed in via kwargs dictionary
         #these should override the defaults above
