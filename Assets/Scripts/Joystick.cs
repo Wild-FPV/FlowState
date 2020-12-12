@@ -22,7 +22,7 @@ public class Joystick : MonoBehaviour
     [SerializeField] private float rcExpo = 0.0f;
     [SerializeField] private bool superExpoActive = true;
     [SerializeField] private float thrust = 25.0f;
-    [SerializeField] private int rate = 300;
+    //[SerializeField] private int rate = 300;
 
     void Start()
     {
@@ -52,9 +52,9 @@ public class Joystick : MonoBehaviour
         float pitchDPS = stickInputToDPS(pitchRCValue);
         float yawDPS = stickInputToDPS(yawRCValue);
         float rollDPS = stickInputToDPS(rollRCValue);
-        Debug.Log("pitch: "+pitchDPS.ToString());
-        Debug.Log("yaw: "+yawDPS.ToString());
-        Debug.Log("roll: "+rollRCValue.ToString());
+        //Debug.Log("pitch: "+pitchDPS.ToString());
+        //Debug.Log("yaw: "+yawDPS.ToString());
+        //Debug.Log("roll: "+rollRCValue.ToString());
         rb.angularVelocity = transform.TransformDirection(new Vector3(pitchDPS, yawDPS, rollDPS));
         //transform.rotation = transform.rotation * Quaternion.Euler(new Vector3(pitchInput, yawInput , rollInput));
         //-1,1 * 0.5
@@ -93,6 +93,7 @@ public class Joystick : MonoBehaviour
 
     public void OnThrottle(InputValue value)
     {
+        Debug.Log("throttle: "+value.ToString());
         throttleInput = (1.0f+value.Get<float>())/2.0f;
     }
 
