@@ -99,7 +99,13 @@ public class @DroneControls : IInputActionCollection, IDisposable
             ]
         }
     ],
-    ""controlSchemes"": []
+    ""controlSchemes"": [
+        {
+            ""name"": ""New control scheme"",
+            ""bindingGroup"": ""New control scheme"",
+            ""devices"": []
+        }
+    ]
 }");
         // Armed
         m_Armed = asset.FindActionMap("Armed", throwIfNotFound: true);
@@ -209,6 +215,15 @@ public class @DroneControls : IInputActionCollection, IDisposable
         }
     }
     public ArmedActions @Armed => new ArmedActions(this);
+    private int m_NewcontrolschemeSchemeIndex = -1;
+    public InputControlScheme NewcontrolschemeScheme
+    {
+        get
+        {
+            if (m_NewcontrolschemeSchemeIndex == -1) m_NewcontrolschemeSchemeIndex = asset.FindControlSchemeIndex("New control scheme");
+            return asset.controlSchemes[m_NewcontrolschemeSchemeIndex];
+        }
+    }
     public interface IArmedActions
     {
         void OnThrottle(InputAction.CallbackContext context);
