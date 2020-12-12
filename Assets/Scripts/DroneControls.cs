@@ -55,7 +55,18 @@ public class @DroneControls : IInputActionCollection, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""c6ad7a04-ab17-4a6b-b473-a27d62b2f063"",
-                    ""path"": ""<HID::Team-BlackSheep TBS Joystick>/stick/x"",
+                    ""path"": ""<Joystick>/stick/x"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Throttle"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""728eaba1-f42f-48c3-825e-48fa05acd31e"",
+                    ""path"": ""<Gamepad>/leftStick/x"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -66,7 +77,18 @@ public class @DroneControls : IInputActionCollection, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""79b549fc-fb95-4ed1-9c76-96ea9d6240a2"",
-                    ""path"": ""<HID::Team-BlackSheep TBS Joystick>/rx"",
+                    ""path"": ""<Joystick>/rx"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Yaw"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1e0cac32-f3a8-4cbc-be4e-501ab2b1263b"",
+                    ""path"": ""<Gamepad>/rightStick/y"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -87,8 +109,30 @@ public class @DroneControls : IInputActionCollection, IDisposable
                 },
                 {
                     ""name"": """",
+                    ""id"": ""32e4b0c9-da5b-4db2-a28d-6dd2d50d010b"",
+                    ""path"": ""<Gamepad>/leftStick/y"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Roll"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
                     ""id"": ""559930e3-2f38-47dc-8271-11cea0d036d7"",
-                    ""path"": ""<HID::Team-BlackSheep TBS Joystick>/z"",
+                    ""path"": ""<Joystick>/z"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Pitch"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""47d4d7b8-aed8-49ff-a180-f47f013bf8d2"",
+                    ""path"": ""<Gamepad>/rightStick/x"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
