@@ -49,6 +49,14 @@ public class @FlightControls : IInputActionCollection, IDisposable
                     ""expectedControlType"": ""Axis"",
                     ""processors"": """",
                     ""interactions"": """"
+                },
+                {
+                    ""name"": ""Menu"",
+                    ""type"": ""Button"",
+                    ""id"": ""be5b5290-0311-4b7a-a039-f186af013725"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """"
                 }
             ],
             ""bindings"": [
@@ -93,6 +101,17 @@ public class @FlightControls : IInputActionCollection, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Yaw"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ddc0224f-f045-41e8-9f97-a7ea768ef0f3"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Menu"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -168,6 +187,7 @@ public class @FlightControls : IInputActionCollection, IDisposable
         m_Armed_Pitch = m_Armed.FindAction("Pitch", throwIfNotFound: true);
         m_Armed_Roll = m_Armed.FindAction("Roll", throwIfNotFound: true);
         m_Armed_Yaw = m_Armed.FindAction("Yaw", throwIfNotFound: true);
+        m_Armed_Menu = m_Armed.FindAction("Menu", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -221,6 +241,7 @@ public class @FlightControls : IInputActionCollection, IDisposable
     private readonly InputAction m_Armed_Pitch;
     private readonly InputAction m_Armed_Roll;
     private readonly InputAction m_Armed_Yaw;
+    private readonly InputAction m_Armed_Menu;
     public struct ArmedActions
     {
         private @FlightControls m_Wrapper;
@@ -229,6 +250,7 @@ public class @FlightControls : IInputActionCollection, IDisposable
         public InputAction @Pitch => m_Wrapper.m_Armed_Pitch;
         public InputAction @Roll => m_Wrapper.m_Armed_Roll;
         public InputAction @Yaw => m_Wrapper.m_Armed_Yaw;
+        public InputAction @Menu => m_Wrapper.m_Armed_Menu;
         public InputActionMap Get() { return m_Wrapper.m_Armed; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -250,6 +272,9 @@ public class @FlightControls : IInputActionCollection, IDisposable
                 @Yaw.started -= m_Wrapper.m_ArmedActionsCallbackInterface.OnYaw;
                 @Yaw.performed -= m_Wrapper.m_ArmedActionsCallbackInterface.OnYaw;
                 @Yaw.canceled -= m_Wrapper.m_ArmedActionsCallbackInterface.OnYaw;
+                @Menu.started -= m_Wrapper.m_ArmedActionsCallbackInterface.OnMenu;
+                @Menu.performed -= m_Wrapper.m_ArmedActionsCallbackInterface.OnMenu;
+                @Menu.canceled -= m_Wrapper.m_ArmedActionsCallbackInterface.OnMenu;
             }
             m_Wrapper.m_ArmedActionsCallbackInterface = instance;
             if (instance != null)
@@ -266,6 +291,9 @@ public class @FlightControls : IInputActionCollection, IDisposable
                 @Yaw.started += instance.OnYaw;
                 @Yaw.performed += instance.OnYaw;
                 @Yaw.canceled += instance.OnYaw;
+                @Menu.started += instance.OnMenu;
+                @Menu.performed += instance.OnMenu;
+                @Menu.canceled += instance.OnMenu;
             }
         }
     }
@@ -321,5 +349,6 @@ public class @FlightControls : IInputActionCollection, IDisposable
         void OnPitch(InputAction.CallbackContext context);
         void OnRoll(InputAction.CallbackContext context);
         void OnYaw(InputAction.CallbackContext context);
+        void OnMenu(InputAction.CallbackContext context);
     }
 }
