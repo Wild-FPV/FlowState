@@ -1,0 +1,54 @@
+ManifestFileVersion: 0
+CRC: 1845033758
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: f50b8ca675f8a11b50e04a5f5a25224c
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 8bc783580257cb76ba66a3db5ec0f14a
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 64
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Resources/asset cone.prefab
+- Assets/Resources/mgp fabric.mat
+- Assets/Resources/asset MGP gate.prefab
+- Assets/Resources/asset lumenier gate large.prefab
+- Assets/Resources/asset MGP gate hanging large.prefab
+- Assets/Resources/gate aluminum.mat
+- Assets/Resources/small tree.prefab
+- Assets/Resources/asset MGP flag.prefab
+- Assets/Resources/asset MGP gate angled dive large.prefab
+- Assets/Resources/asset MGP ladder large.prefab
+- Assets/Resources/asset table.prefab
+- Assets/Resources/asset MGP gate double.prefab
+- Assets/Resources/asset MGP gate double large.prefab
+- Assets/Resources/asset MGP gate dive large.prefab
+- Assets/Resources/asset MGP hurdle.prefab
+- Assets/Resources/asset MGP hurdle large.prefab
+- Assets/Resources/asset launch pad.prefab
+- Assets/Resources/asset pole.prefab
+- Assets/Resources/asset pop-up gate.prefab
+- Assets/Resources/asset concrete block.prefab
+- Assets/Resources/asset MGP gate high large.prefab
+- Assets/Resources/asset pine tree 12m.prefab
+Dependencies: []
