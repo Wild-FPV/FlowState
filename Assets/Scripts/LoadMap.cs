@@ -7,6 +7,9 @@ using UnityEngine.Networking;
 
 public class LoadMap : MonoBehaviour
 {
+    [SerializeField] string mapName;
+
+
     void Start () {
         var myLoadedAssetBundle = AssetBundle.LoadFromFile(Path.Combine(Application.streamingAssetsPath, "standardmapelements"));
         if (myLoadedAssetBundle == null)
@@ -15,7 +18,7 @@ public class LoadMap : MonoBehaviour
             return;
         }
 
-        var mapFile = ReadMap();
+        var mapFile = ReadMap(mapName);
         FSMap map = JsonUtility.FromJson<FSMap>(mapFile);
 
         List<MapAsset> mapAssets = map.assets;
@@ -45,46 +48,11 @@ public class LoadMap : MonoBehaviour
         }
 
         myLoadedAssetBundle.Unload(false);
-
-        /*foreach (Renderer r in GameObject.FindObjectsOfType<Renderer>())
-        {
-            foreach(Material m in r.materials){
-                Material mat = new Material(Shader.Find(m.shader.name));
-
-                mat.CopyPropertiesFromMaterial(r.material);
-
-                r.material = mat;
-            }
-
-        }*/
     }
 
-     // Update is called once per frame
-    void Update()
+    static string ReadMap(string mapName)
     {
-
-    }
-
-
-
-    /*static string ReadString()
-    {
-        string mapName = "2020 MultiGP Global Qualifier.fmp";
-        string path = Path.Combine(Path.Combine(Application.streamingAssetsPath,"Maps"), mapName);
-
-        //Read the text from directly from the test.txt file
-        StreamReader reader = new StreamReader(path);
-        string result = reader.ReadToEnd();
-        Debug.Log(result);
-        reader.Close();
-        return result;
-    }*/
-
-    static string ReadMap()
-    {
-        var mapFile = Resources.Load("2020 MultiGP Global Qualifier");
-        Debug.Log("hello world");
-        Debug.Log(mapFile);
+        var mapFile = Resources.Load(mapName);
         return mapFile.ToString();
     }
 

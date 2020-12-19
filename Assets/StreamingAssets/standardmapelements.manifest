@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 1845033758
+CRC: 3417511783
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: f50b8ca675f8a11b50e04a5f5a25224c
+    Hash: 4dc4061dd8326c1b9140741bee18637b
   TypeTreeHash:
     serializedVersion: 2
     Hash: 8bc783580257cb76ba66a3db5ec0f14a
@@ -30,23 +30,36 @@ ClassTypes:
 SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/Resources/asset cone.prefab
-- Assets/Resources/mgp fabric.mat
+- Assets/Resources/Materials/Synthetic/fabric/NylonStraps.mat
+- Assets/Resources/Materials/Synthetic/fabric/mgp fabric.mat
 - Assets/Resources/asset MGP gate.prefab
+- Assets/Resources/Materials/Organic/tree1trunk.mat
+- Assets/Resources/Materials/Synthetic/launch stand pad.mat
+- Assets/Resources/Materials/Organic/Pine Tree 12m.mat
 - Assets/Resources/asset lumenier gate large.prefab
 - Assets/Resources/asset MGP gate hanging large.prefab
-- Assets/Resources/gate aluminum.mat
+- Assets/Resources/Materials/Metal/gate aluminum.mat
 - Assets/Resources/small tree.prefab
 - Assets/Resources/asset MGP flag.prefab
 - Assets/Resources/asset MGP gate angled dive large.prefab
 - Assets/Resources/asset MGP ladder large.prefab
 - Assets/Resources/asset table.prefab
+- Assets/Resources/Materials/Rock/Concrete 1.mat
 - Assets/Resources/asset MGP gate double.prefab
+- Assets/Resources/Materials/Synthetic/cone plastic.mat
 - Assets/Resources/asset MGP gate double large.prefab
 - Assets/Resources/asset MGP gate dive large.prefab
 - Assets/Resources/asset MGP hurdle.prefab
+- Assets/Resources/Materials/Synthetic/fabric/mgp flag fabric.mat
+- Assets/Resources/Materials/Synthetic/fabric/mgp hurdle fabric.mat
 - Assets/Resources/asset MGP hurdle large.prefab
+- Assets/Resources/Materials/Metal/launch stand metal.mat
 - Assets/Resources/asset launch pad.prefab
+- Assets/Resources/Materials/Synthetic/black plastic.mat
 - Assets/Resources/asset pole.prefab
+- Assets/Resources/Materials/Organic/tree1branch.mat
+- Assets/Resources/Materials/Synthetic/fabric/luminier fabric.mat
+- Assets/Resources/Materials/Organic/Pine Tree 12m branches.mat
 - Assets/Resources/asset pop-up gate.prefab
 - Assets/Resources/asset concrete block.prefab
 - Assets/Resources/asset MGP gate high large.prefab
