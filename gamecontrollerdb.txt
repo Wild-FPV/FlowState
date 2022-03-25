@@ -28,6 +28,12 @@ d8041057000000000000504944564944,TBS Joystick,platform:Windows,leftx:a3,lefty:a0
 3412adbe000000000000504944564944,vJoy Device,platform:Windows,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:a4,righttrigger:a5,
 #DX6i user submitted
 7f1227e0000000000000504944564944,easyFly2 Interface,platform:Windows,b:a3,leftx:a4,lefty:a0,rightx:a1,righty:a2,lefttrigger:a5,
+#Jumper T-lite (tested)
+0912544f000000000000504944564944,Jumper TLite Joystick,platform:Windows,leftshoulder:a4,rightshoulder:a7,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:a5,righttrigger:a6,
+#Radiomaster TX12 (user submitted)
+0912544f000000000000504944564944,Radiomaster TX12 Joystick,platform:Windows,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:a4,righttrigger:a6,
+#Radiomaster TX16S (user submitted)
+0912544f000000000000504944564944,RM TX16S Joystick,platform:Windows,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:a4,righttrigger:a5,
 
 #DIY
 #Teensy Arduino
