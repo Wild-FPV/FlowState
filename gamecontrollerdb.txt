@@ -34,6 +34,8 @@ d8041057000000000000504944564944,TBS Joystick,platform:Windows,leftx:a3,lefty:a0
 0912544f000000000000504944564944,Radiomaster TX12 Joystick,platform:Windows,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:a4,righttrigger:a6,
 #Radiomaster TX16S (user submitted)
 0912544f000000000000504944564944,RM TX16S Joystick,platform:Windows,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:a4,righttrigger:a5,
+#SM600 (user submitted)
+9b0b1240000000000000504944564944,RC Simulator - XTR+G2+FMS Controller,platform:Windows,leftx:a3,lefty:a1,rightx:a4,righty:a0,lefttrigger:a5,righttrigger:b0,
 
 #DIY
 #Teensy Arduino
