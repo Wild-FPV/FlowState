@@ -38,6 +38,8 @@ d8041057000000000000504944564944,TBS Joystick,platform:Windows,leftx:a3,lefty:a0
 9b0b1240000000000000504944564944,RC Simulator - XTR+G2+FMS Controller,platform:Windows,leftx:a3,lefty:a1,rightx:a4,righty:a0,lefttrigger:a5,righttrigger:b0,
 #Radiomaster T8 (user submitted)
 0912544f000000000000504944564944,Radiomaster T8 Joystick,platform:Windows,a:a4,b:a6,lefttrigger:a7,righttrigger:a5
+#BetaFPV Lite Radio 2 SE (user submitted)
+83045057000000000000504944564944,BETAFPV Joystick,platform:Windows,leftshoulder:a2,rightshoulder:a6,leftx:a0,lefty:a5,rightx:a3,righty:a4,lefttrigger:a1,righttrigger:a7,
 
 #DIY
 #Teensy Arduino
