@@ -40,6 +40,8 @@ d8041057000000000000504944564944,TBS Joystick,platform:Windows,leftx:a3,lefty:a0
 0912544f000000000000504944564944,Radiomaster T8 Joystick,platform:Windows,a:a4,b:a6,lefttrigger:a7,righttrigger:a5
 #BetaFPV Lite Radio 2 SE (user submitted)
 83045057000000000000504944564944,BETAFPV Joystick,platform:Windows,leftshoulder:a2,rightshoulder:a6,leftx:a0,lefty:a5,rightx:a3,righty:a4,lefttrigger:a1,righttrigger:a7,
+#Taranis QX7 (user submitted)
+0300000009120000544f000000000000,FrSky Taranis Joystick,platform:Windows,leftx:a3,lefty:a2,rightx:a0,righty:a1,lefttrigger:a7,righttrigger:a6,
 
 #DIY
 #Teensy Arduino
